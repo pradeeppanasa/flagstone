@@ -1,0 +1,8 @@
+{
+  "/v3": {
+    "target": "https://agent-prod.studio.lyzr.ai",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

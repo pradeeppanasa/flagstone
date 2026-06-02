@@ -1,0 +1,7 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f4f8; color: #1f2937; }
+h1, h2, h3 { font-weight: 600; }
+a { color: #2563eb; }
+button { font-family: Arial, sans-serif; }
+input, textarea { font-family: Arial, sans-serif; outline: none; }
+input:focus, textarea:focus { border-color: #2e75b6 !important; box-shadow: 0 0 0 2px rgba(46,117,182,0.15); }
