@@ -48,7 +48,7 @@ export class LyzrAgentService {
       // Try to extract JSON from markdown code blocks
       const match = response.response.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (match) {
-        try { return JSON.parse(match[1]) as T; } catch { }
+        try { return JSON.parse(match[1].trim()) as T; } catch { }
       }
       // Return raw response as summary if not JSON
       return null;
