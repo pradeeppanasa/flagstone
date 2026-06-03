@@ -52,14 +52,26 @@ export class FxComponent {
   pairs = ['GBP/USD', 'GBP/EUR', 'EUR/USD', 'GBP/CHF', 'GBP/JPY'];
   constructor(private lyzr: LyzrAgentService) {}
   check() {
-    this.loading = true; this.error = null;
+    this.loading = true;
+    this.error = null;
     const msg = this.quotedRate
-      ? `The HSBC quoted ${this.pair} rate is ${this.quotedRate}. Search for current market mid rate and assess competitiveness. Classify impact.`
-      : `Search for current ${this.pair} market rate and assess HSBC FX service competitiveness.`;
+      ? `The HSBC quoted ${this.pair} rate is ${this.quotedRate}. Search for current ${this.pair.replace('/', ' to ')} market mid rate today. Calculate spread percentage. Classify competitiveness. Return FX_Pricing_Alert JSON.`
+      : `Search for current ${this.pair.replace('/', ' to ')} exchange rate today and assess HSBC FX competitiveness.`;
     this.lyzr.callAgent(environment.agents['fx'], msg).subscribe({
       next: (res) => { this.response = res.response; this.loading = false; },
       error: () => { this.error = 'Failed to connect to FX Agent.'; this.loading = false; }
     });
   }
-  quickCheck(p: string) { this.pair = p; this.quotedRate = ''; this.check(); }
+  quickCheck(p: string) {
+    const defaultRates: Record<string, string> = {
+      'GBP/USD': '1.2618',
+      'GBP/EUR': '1.1685',
+      'EUR/USD': '1.0756',
+      'GBP/CHF': '1.1283',
+      'GBP/JPY': '191.62'
+    };
+    this.pair = p;
+    this.quotedRate = defaultRates[p] || '';
+    this.check();
+  }
 }
