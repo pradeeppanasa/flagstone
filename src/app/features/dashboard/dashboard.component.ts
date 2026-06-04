@@ -55,10 +55,21 @@ import { environment } from '../../../environments/environment';
       <div class="quick-section">
         <h2>Quick Bank Check</h2>
         <div class="bank-buttons">
-          <button *ngFor="let bank of banks" (click)="checkBank(bank)" [disabled]="loadingBank === bank" class="btn-bank">
-            {{ loadingBank === bank ? '...' : bank }}
+          <button *ngFor="let bank of banks"
+            (click)="checkBank(bank)"
+            [disabled]="!!loadingBank"
+            [class.btn-bank-loading]="loadingBank === bank"
+            class="btn-bank">
+            <span *ngIf="loadingBank === bank" class="btn-spinner"></span>
+            {{ loadingBank === bank ? 'Checking ' + bank + '...' : bank }}
           </button>
         </div>
+      </div>
+
+      <!-- Bank loading progress bar -->
+      <div *ngIf="loadingBank" class="bank-progress">
+        <div class="bank-progress-bar"></div>
+        <span>Fetching {{ loadingBank }} rate data...</span>
       </div>
 
       <!-- Error -->
@@ -78,7 +89,7 @@ import { environment } from '../../../environments/environment';
           <span class="badge-count">{{ alerts.length }}</span>
         </div>
         <app-alert-card *ngFor="let a of alerts" [alert]="a"></app-alert-card>
-        <div *ngIf="alerts.length === 0 && !loading" class="empty">
+        <div *ngIf="alerts.length === 0 && !loading && !loadingBank" class="empty">
           Click "Morning Briefing" or search a bank to load alerts.
         </div>
       </div>
@@ -116,7 +127,13 @@ import { environment } from '../../../environments/environment';
     .bank-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
     .btn-bank { background: white; border: 1px solid #e5e7eb; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #1a3a5c; font-weight: 500; transition: all 0.2s; }
     .btn-bank:hover { background: #ebf3fa; border-color: #2e75b6; }
-    .btn-bank:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-bank:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-bank-loading { background: #ebf3fa !important; border-color: #2e75b6 !important; color: #2e75b6 !important; display: flex; align-items: center; gap: 6px; }
+    .btn-spinner { width: 10px; height: 10px; border: 2px solid #c7dff0; border-top-color: #2e75b6; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .bank-progress { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #f0f7ff; border-radius: 6px; margin-bottom: 12px; font-size: 13px; color: #2e75b6; overflow: hidden; position: relative; }
+    .bank-progress-bar { position: absolute; left: 0; top: 0; height: 3px; background: linear-gradient(90deg, #2e75b6, #60a5fa, #2e75b6); background-size: 200% 100%; animation: progress 1.5s ease-in-out infinite; width: 100%; }
+    @keyframes progress { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
     .error-bar { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
     .error-bar button { background: none; border: none; cursor: pointer; color: #dc2626; font-size: 16px; }
@@ -198,6 +215,7 @@ export class DashboardComponent implements OnInit {
           }, ...this.alerts];
         }
         this.loadingBank = '';
+        setTimeout(() => document.querySelector('.alerts-section')?.scrollIntoView({ behavior: 'smooth' }), 100);
       },
       error: (err: any) => {
         this.alerts = [{
@@ -209,6 +227,7 @@ export class DashboardComponent implements OnInit {
           confidence_score: 0
         }, ...this.alerts];
         this.loadingBank = '';
+        setTimeout(() => document.querySelector('.alerts-section')?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
     });
   }
