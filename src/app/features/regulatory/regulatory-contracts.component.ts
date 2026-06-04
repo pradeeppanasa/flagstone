@@ -48,7 +48,8 @@ import { environment } from '../../../environments/environment';
           </div>
           <div *ngIf="parsed.source_reference" class="reg-field">
             <span class="field-label">Source</span>
-            <span class="field-value">{{ parsed.source_reference }}</span>
+            <a *ngIf="parsed.source_reference.startsWith('http')" [href]="parsed.source_reference" target="_blank" class="field-link">{{ parsed.source_reference }}</a>
+            <span *ngIf="!parsed.source_reference.startsWith('http')" class="field-value">{{ parsed.source_reference }}</span>
           </div>
           <div *ngIf="parsed.confidence_score" class="reg-field">
             <span class="field-label">Confidence</span>
@@ -119,6 +120,8 @@ import { environment } from '../../../environments/environment';
     .reg-field { display: flex; flex-direction: column; gap: 3px; }
     .field-label { font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600; }
     .field-value { font-size: 13px; color: #374151; font-weight: 500; }
+    .field-link { font-size: 12px; color: #2e75b6; text-decoration: none; word-break: break-all; }
+    .field-link:hover { text-decoration: underline; }
     .deadline { color: #dc2626; font-weight: 700; }
 
     .tag-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
