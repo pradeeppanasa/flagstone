@@ -147,7 +147,7 @@ export class DashboardComponent implements OnInit {
 
   constructor(private lyzr: LyzrAgentService) {}
 
-  ngOnInit() { this.loadBriefing(); }
+  ngOnInit() {}
 
   loadBriefing() {
     this.loading = true;
