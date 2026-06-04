@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment';
     <div class="page">
       <div class="page-header">
         <h1>Regulatory Monitor</h1>
-        <p class="subtitle">JFSC, FCA and multi-jurisdictional regulatory tracking</p>
+        <p class="subtitle">FCA EMI | PCI-DSS | EU PSD3 | US Durbin | Multi-jurisdictional compliance</p>
       </div>
       <div class="input-card">
         <div class="input-row">
@@ -17,10 +17,10 @@ import { environment } from '../../../environments/environment';
         </div>
       </div>
       <div class="quick-buttons">
-        <button (click)="quickSearch('JFSC')" class="btn-q">JFSC Updates</button>
-        <button (click)="quickSearch('FCA')" class="btn-q">FCA Updates</button>
-        <button (click)="quickSearch('AML/CFT')" class="btn-q">AML/CFT</button>
-        <button (click)="quickSearch('compliance calendar')" class="btn-q">2026 Calendar</button>
+        <button (click)="quickSearch('FCA Electronic Money Institution')" class="btn-q">FCA EMI 2026</button>
+        <button (click)="quickSearch('PCI-DSS card issuer')" class="btn-q">PCI-DSS</button>
+        <button (click)="quickSearch('EU PSD3 prepaid card')" class="btn-q">EU PSD3</button>
+        <button (click)="quickSearch('US Durbin prepaid debit')" class="btn-q">US Durbin</button>
       </div>
       <div *ngIf="loading" class="loading"><div class="spinner"></div></div>
       <div *ngIf="error" class="error-bar">{{ error }}</div>
@@ -149,7 +149,7 @@ export class RegulatoryComponent {
     });
   }
   quickSearch(topic: string) {
-    this.query = `What are the latest ${topic} regulatory updates in 2026 affecting Flagstone? Classify urgency and recommend action.`;
+    this.query = `Use serper_search to find the latest ${topic} regulatory updates in 2026 affecting B4B Payments EMI ref 930619. Classify urgency and create Jira ticket if URGENT or IMMEDIATE.`;
     this.search();
   }
 }
