@@ -113,10 +113,10 @@ export class SettlementComponent {
       next: (res) => {
         const parsed = this.lyzr.parseJSON<SettlementAlert>(res);
         if (parsed) this.alerts = [parsed, ...this.alerts];
-        else this.error = 'Could not parse response. Raw: ' + res.response.substring(0, 200);
+        else this.error = 'The agent returned an unexpected format. Please try again.';
         this.loading = false;
       },
-      error: () => { this.error = 'Failed to connect to Settlement Agent.'; this.loading = false; }
+      error: (err: any) => { this.error = err.message || 'Unable to analyse the exception. Please try again.'; this.loading = false; }
     });
   }
 

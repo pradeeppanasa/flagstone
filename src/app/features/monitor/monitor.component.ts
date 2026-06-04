@@ -61,7 +61,7 @@ export class MonitorComponent {
     this.loading = true; this.error = null;
     this.lyzr.callAgent(environment.agents['monitor'], this.query).subscribe({
       next: (res) => { this.response = res.response; this.loading = false; },
-      error: () => { this.error = 'Failed to connect.'; this.loading = false; }
+      error: (err: any) => { this.error = err.message || 'Unable to fetch rate data. Please try again.'; this.loading = false; }
     });
   }
   quickSearch(bank: string) { this.query = `Search for latest ${bank} UK rate changes 2026 and classify business impact`; this.search(); }

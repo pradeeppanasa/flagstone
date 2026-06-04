@@ -31,7 +31,7 @@ export class LyzrAgentService {
       timeout(30000),
       catchError(err => {
         console.error('Lyzr API error:', err);
-        const msg = err.name === 'TimeoutError' ? 'Request timed out (30s). Try again.' : err.message || 'Agent call failed';
+        const msg = err.name === 'TimeoutError' ? 'The search is taking too long. Please try again.' : 'Something went wrong. Please try again.';
         return throwError(() => new Error(msg));
       })
     );

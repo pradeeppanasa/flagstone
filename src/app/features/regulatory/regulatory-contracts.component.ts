@@ -12,18 +12,18 @@ import { environment } from '../../../environments/environment';
       </div>
       <div class="input-card">
         <div class="input-row">
-          <input [(ngModel)]="query" placeholder="Ask about regulations e.g. 'Latest JFSC updates 2026'" (keyup.enter)="search()" />
-          <button (click)="search()" [disabled]="loading || !query">{{ loading ? '...' : 'Search' }}</button>
+          <input [(ngModel)]="displayQuery" placeholder="Ask about regulations e.g. 'Latest FCA EMI updates 2026'" (keyup.enter)="searchFreeText()" />
+          <button (click)="searchFreeText()" [disabled]="loading || !displayQuery">{{ loading ? '...' : 'Search' }}</button>
         </div>
       </div>
       <div class="quick-buttons">
-        <button (click)="quickSearch('FCA Electronic Money Institution')" class="btn-q">FCA EMI 2026</button>
-        <button (click)="quickSearch('PCI-DSS card issuer')" class="btn-q">PCI-DSS</button>
-        <button (click)="quickSearch('EU PSD3 prepaid card')" class="btn-q">EU PSD3</button>
-        <button (click)="quickSearch('US Durbin prepaid debit')" class="btn-q">US Durbin</button>
+        <button (click)="quickSearch('FCA EMI 2026', 'FCA Electronic Money Institution')" class="btn-q">FCA EMI 2026</button>
+        <button (click)="quickSearch('PCI-DSS', 'PCI-DSS card issuer')" class="btn-q">PCI-DSS</button>
+        <button (click)="quickSearch('EU PSD3', 'EU PSD3 prepaid card')" class="btn-q">EU PSD3</button>
+        <button (click)="quickSearch('US Durbin', 'US Durbin prepaid debit')" class="btn-q">US Durbin</button>
       </div>
-      <div *ngIf="loading" class="loading"><div class="spinner"></div></div>
-      <div *ngIf="error" class="error-bar">{{ error }}</div>
+      <div *ngIf="loading" class="loading"><div class="spinner"></div> Searching regulatory updates...</div>
+      <div *ngIf="error" class="error-bar">⚠ {{ error }}</div>
 
       <!-- Structured card when JSON parsed -->
       <div *ngIf="parsed" class="reg-card">
@@ -135,22 +135,29 @@ import { environment } from '../../../environments/environment';
   `]
 })
 export class RegulatoryComponent {
-  query = ''; response = ''; parsed: any = null; loading = false; error: string | null = null;
+  displayQuery = ''; response = ''; parsed: any = null; loading = false; error: string | null = null;
   constructor(private lyzr: LyzrAgentService) {}
-  search() {
+
+  private runSearch(apiPrompt: string) {
     this.loading = true; this.error = null; this.parsed = null; this.response = '';
-    this.lyzr.callAgent(environment.agents['regulatory'], this.query).subscribe({
+    this.lyzr.callAgent(environment.agents['regulatory'], apiPrompt).subscribe({
       next: (res) => {
         this.parsed = this.lyzr.parseJSON<any>(res);
         if (!this.parsed) this.response = res.response;
         this.loading = false;
       },
-      error: () => { this.error = 'Failed to connect to Regulatory Agent.'; this.loading = false; }
+      error: (err: any) => { this.error = err.message || 'Unable to load regulatory data. Please try again.'; this.loading = false; }
     });
   }
-  quickSearch(topic: string) {
-    this.query = `Find the latest ${topic} regulatory updates in 2026. Classify urgency. Return Regulatory_Update JSON.`;
-    this.search();
+
+  searchFreeText() {
+    if (!this.displayQuery.trim()) return;
+    this.runSearch(`${this.displayQuery}. Return Regulatory_Update JSON.`);
+  }
+
+  quickSearch(label: string, topic: string) {
+    this.displayQuery = label;
+    this.runSearch(`Find the latest ${topic} regulatory updates in 2026. Classify urgency. Return Regulatory_Update JSON.`);
   }
 }
 
@@ -175,8 +182,8 @@ export class RegulatoryComponent {
         <button (click)="quickSearch('Barclays T&C March 2026')" class="btn-q">Barclays T&amp;C</button>
         <button (click)="quickSearch('most critical contract changes requiring immediate action')" class="btn-q">Critical Changes</button>
       </div>
-      <div *ngIf="loading" class="loading"><div class="spinner"></div></div>
-      <div *ngIf="error" class="error-bar">{{ error }}</div>
+      <div *ngIf="loading" class="loading"><div class="spinner"></div> Reviewing contract changes...</div>
+      <div *ngIf="error" class="error-bar">⚠ {{ error }}</div>
 
       <!-- Structured card when JSON parsed -->
       <div *ngIf="parsed" class="contract-card" [class]="'severity-border-' + parsed.severity">
@@ -302,7 +309,7 @@ export class ContractsComponent {
         if (!this.parsed) this.response = res.response;
         this.loading = false;
       },
-      error: () => { this.error = 'Failed to connect to Contract Agent.'; this.loading = false; }
+      error: (err: any) => { this.error = err.message || 'Unable to load contract data. Please try again.'; this.loading = false; }
     });
   }
   quickSearch(q: string) { this.query = q; this.search(); }

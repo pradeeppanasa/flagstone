@@ -21,8 +21,8 @@ import { environment } from '../../../environments/environment';
       <div class="quick-buttons">
         <button *ngFor="let p of pairs" (click)="quickCheck(p)" class="btn-pair">{{ p }}</button>
       </div>
-      <div *ngIf="loading" class="loading"><div class="spinner"></div></div>
-      <div *ngIf="error" class="error-bar">{{ error }}</div>
+      <div *ngIf="loading" class="loading"><div class="spinner"></div> Fetching live rate data...</div>
+      <div *ngIf="error" class="error-bar">⚠ {{ error }}</div>
 
       <!-- Structured card when JSON parsed -->
       <div *ngIf="parsed" class="fx-card" [class]="'impact-border-' + parsed.impact_level">
@@ -148,7 +148,7 @@ export class FxComponent {
         if (!this.parsed) this.response = res.response;
         this.loading = false;
       },
-      error: () => { this.error = 'Failed to connect to FX Agent.'; this.loading = false; }
+      error: (err: any) => { this.error = err.message || 'Unable to fetch FX data. Please try again.'; this.loading = false; }
     });
   }
   quickCheck(p: string) {

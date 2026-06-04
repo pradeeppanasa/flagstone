@@ -173,7 +173,7 @@ export class DashboardComponent implements OnInit {
         }
         this.loading = false;
       },
-      error: () => { this.error = 'Failed to load morning briefing.'; this.loading = false; }
+      error: (err: any) => { this.error = err.message || 'Unable to load morning briefing. Please try again.'; this.loading = false; }
     });
   }
 
@@ -202,7 +202,7 @@ export class DashboardComponent implements OnInit {
         this.asking = false;
       },
       error: () => {
-        this.managerResponse = 'Error connecting to Manager Agent. Check your API key.';
+        this.managerResponse = 'Unable to get a response right now. Please try again.';
         this.asking = false;
       }
     });
