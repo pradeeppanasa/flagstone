@@ -181,14 +181,35 @@ export class DashboardComponent implements OnInit {
     this.loadingBank = bank;
     this.lyzr.callAgent(
       environment.agents['monitor'],
-      `Search for latest ${bank} UK rate changes in 2026. Combine internal and external data. Return unified alert.`
+      `Search for latest ${bank} UK rate changes in 2026. Return Bank_Event_Notification JSON.`
     ).subscribe({
       next: (res) => {
         const parsed = this.lyzr.parseJSON<any>(res);
-        if (parsed) this.alerts = [parsed, ...this.alerts];
+        if (parsed) {
+          this.alerts = [parsed, ...this.alerts];
+        } else {
+          this.alerts = [{
+            bank_name: bank,
+            summary: res.response,
+            impact_level: 'low',
+            event_type: 'rate changes',
+            recommended_action: '',
+            confidence_score: 0.8
+          }, ...this.alerts];
+        }
         this.loadingBank = '';
       },
-      error: () => { this.loadingBank = ''; }
+      error: (err: any) => {
+        this.alerts = [{
+          bank_name: bank,
+          summary: err.message || 'Unable to fetch rate data. Please try again.',
+          impact_level: 'low',
+          event_type: 'error',
+          recommended_action: '',
+          confidence_score: 0
+        }, ...this.alerts];
+        this.loadingBank = '';
+      }
     });
   }
 

@@ -28,7 +28,7 @@ export class LyzrAgentService {
       environment.lyzrBaseUrl, body,
       { headers: this.getHeaders() }
     ).pipe(
-      timeout(30000),
+      timeout(60000),
       catchError(err => {
         console.error('Lyzr API error:', err);
         const msg = err.name === 'TimeoutError' ? 'The search is taking too long. Please try again.' : 'Something went wrong. Please try again.';
