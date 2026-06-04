@@ -18,21 +18,12 @@ import { Component } from '@angular/core';
           <li><a routerLink="/dashboard" routerLinkActive="active">
             <span class="nav-icon">⊞</span> Dashboard
           </a></li>
-          <li class="nav-disabled">
-            <span class="nav-icon">📊</span> Rate Monitor
-          </li>
-          <li class="nav-disabled">
-            <span class="nav-icon">✓</span> Onboarding
-          </li>
           <li><a routerLink="/fx" routerLinkActive="active">
             <span class="nav-icon">₤</span> FX Pricing
           </a></li>
           <li><a routerLink="/regulatory" routerLinkActive="active">
             <span class="nav-icon">⚖</span> Regulatory
           </a></li>
-          <li class="nav-disabled">
-            <span class="nav-icon">📄</span> Contracts
-          </li>
           <li><a routerLink="/settlement" routerLinkActive="active">
             <span class="nav-icon">⚡</span> Settlement
           </a></li>
@@ -57,7 +48,6 @@ import { Component } from '@angular/core';
     .nav-links { list-style: none; padding: 12px 0; margin: 0; flex: 1; }
     .nav-links li a { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; transition: all 0.2s; }
     .nav-links li a:hover, .nav-links li a.active { background: rgba(255,255,255,0.1); color: white; border-left: 3px solid #2e75b6; }
-    .nav-disabled { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: rgba(255,255,255,0.25); font-size: 13px; cursor: not-allowed; }
     .nav-icon { font-size: 14px; width: 18px; text-align: center; }
     .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
     .powered { font-size: 10px; opacity: 0.4; }

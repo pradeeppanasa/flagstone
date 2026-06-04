@@ -149,7 +149,7 @@ export class RegulatoryComponent {
     });
   }
   quickSearch(topic: string) {
-    this.query = `Use serper_search to find the latest ${topic} regulatory updates in 2026 affecting B4B Payments EMI ref 930619. Classify urgency and create Jira ticket if URGENT or IMMEDIATE.`;
+    this.query = `Find the latest ${topic} regulatory updates in 2026. Classify urgency. Return Regulatory_Update JSON.`;
     this.search();
   }
 }

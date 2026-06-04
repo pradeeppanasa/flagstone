@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, timeout } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AgentRequest, AgentResponse } from '../models/models';
 
@@ -28,9 +28,11 @@ export class LyzrAgentService {
       environment.lyzrBaseUrl, body,
       { headers: this.getHeaders() }
     ).pipe(
+      timeout(30000),
       catchError(err => {
         console.error('Lyzr API error:', err);
-        return throwError(() => new Error(err.message || 'Agent call failed'));
+        const msg = err.name === 'TimeoutError' ? 'Request timed out (30s). Try again.' : err.message || 'Agent call failed';
+        return throwError(() => new Error(msg));
       })
     );
   }
