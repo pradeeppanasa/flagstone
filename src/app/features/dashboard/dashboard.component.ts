@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
       <div class="page-header">
         <div>
           <h1>Intelligence Dashboard</h1>
-          <p class="subtitle">Flagstone International | Powered by Lyzr AI</p>
+          <p class="subtitle">Panasa Intelligence Platform | Powered by Lyzr AI</p>
         </div>
         <button (click)="loadBriefing()" class="btn-primary" [disabled]="loading">
           {{ loading ? 'Loading...' : '↻ Morning Briefing' }}

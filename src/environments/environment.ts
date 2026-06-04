@@ -2,7 +2,7 @@ export const environment = {
   production: false,
   lyzrApiKey: 'sk-default-KshvKfZv5VreGXMjOe8DQvFJfsosuOcR',
   lyzrBaseUrl: 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/',
-  userId: 'flagstone-ops',
+  userId: 'panasa-ops',
   agents: {
     manager:    '6a1dc89af6b085eee307e2f9',
     monitor:    '6a1874f7da56d8978dfe6d0b',
