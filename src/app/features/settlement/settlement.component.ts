@@ -112,8 +112,22 @@ export class SettlementComponent {
     this.lyzr.callAgent(environment.agents['settlement'], this.exceptionInput).subscribe({
       next: (res) => {
         const parsed = this.lyzr.parseJSON<SettlementAlert>(res);
-        if (parsed) this.alerts = [parsed, ...this.alerts];
-        else this.error = 'The agent returned an unexpected format. Please try again.';
+        if (parsed) {
+          this.alerts = [parsed, ...this.alerts];
+        } else {
+          this.alerts = [{
+            event_type: 'Analysis',
+            summary: res.response,
+            severity: 'low',
+            currency_pair: '',
+            amount: 0,
+            base_currency: '',
+            timeline: '',
+            recommended_action: '',
+            resolution_status: 'pending',
+            escalate_to: []
+          } as any, ...this.alerts];
+        }
         this.loading = false;
       },
       error: (err: any) => { this.error = err.message || 'Unable to analyse the exception. Please try again.'; this.loading = false; }
