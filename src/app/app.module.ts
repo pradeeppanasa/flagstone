@@ -11,6 +11,7 @@ import { OnboardingComponent } from './features/onboarding/onboarding.component'
 import { FxComponent } from './features/fx/fx.component';
 import { RegulatoryComponent, ContractsComponent } from './features/regulatory/regulatory-contracts.component';
 import { SettlementComponent } from './features/settlement/settlement.component';
+import { SchemeComplianceComponent } from './features/scheme-compliance/scheme-compliance.component';
 import { ImpactBadgeComponent } from './shared/components/impact-badge/impact-badge.component';
 import { AlertCardComponent } from './shared/components/alert-card/alert-card.component';
 
@@ -24,6 +25,7 @@ import { AlertCardComponent } from './shared/components/alert-card/alert-card.co
     RegulatoryComponent,
     ContractsComponent,
     SettlementComponent,
+    SchemeComplianceComponent,
     ImpactBadgeComponent,
     AlertCardComponent
   ],

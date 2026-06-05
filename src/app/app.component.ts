@@ -27,6 +27,9 @@ import { Component } from '@angular/core';
           <li><a routerLink="/settlement" routerLinkActive="active">
             <span class="nav-icon">⚡</span> Settlement
           </a></li>
+          <li><a routerLink="/scheme-compliance" routerLinkActive="active">
+            <span class="nav-icon">🃏</span> Scheme Compliance
+          </a></li>
         </ul>
         <div class="sidebar-footer">
           <span class="powered">Powered by Lyzr AI</span>
