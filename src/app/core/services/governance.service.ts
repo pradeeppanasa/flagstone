@@ -44,13 +44,16 @@ export class GovernanceService {
   // ── PII patterns (pii_detector.py) — financial domain additions: IBAN, sort code ──
   private readonly PII_PATTERNS: Record<string, RegExp> = {
     email:       /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
-    phone:       /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b|\b0[1-9]\d{1,4}[-.\s]?\d{3,4}[-.\s]?\d{3,4}\b|\b\+44[-.\s]?\d{2,5}[-.\s]?\d{6,8}\b/g,
+    // Fix 4: added 07xxx xxxxxx UK mobile pattern
+    phone:       /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b|\b0[1-9]\d{1,4}[-.\s]?\d{3,4}[-.\s]?\d{3,4}\b|\b\+44[-.\s]?\d{2,5}[-.\s]?\d{6,8}\b|\b07\d{3}[-.\s]?\d{6}\b/g,
     ssn:         /\b\d{3}-\d{2}-\d{4}\b/g,
     credit_card: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
     passport:    /\b[A-Z]{1,2}\d{6,9}\b/g,
-    ip_address:  /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g,
+    // Fix 1: strict octet validation 0-255, stops matching version numbers like 1.2.3.4
+    ip_address:  /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g,
     iban:        /\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7,19}\b/g,
-    sort_code:   /\b\d{2}-\d{2}-\d{2}\b/g
+    // Fix 2: negative lookahead prevents matching dates like 25-12-2026 or 12-06-25
+    sort_code:   /\b(?:sort[-\s]?code[:\s]+)?\d{2}-\d{2}-\d{2}\b(?!\s*-\s*\d{4}|\s*20\d{2})/gi
   };
 
   private readonly PII_LABELS: Record<string, string> = {

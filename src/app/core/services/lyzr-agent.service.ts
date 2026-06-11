@@ -65,10 +65,13 @@ export class LyzrAgentService {
       return throwError(() => e);
     }
 
-    // 2. Enforce max input length
-    const trimmed = message.length > this.MAX_INPUT_LENGTH
-      ? message.substring(0, this.MAX_INPUT_LENGTH)
-      : message;
+    // 2. Enforce max input length — reject with user-facing message
+    if (message.length > this.MAX_INPUT_LENGTH) {
+      return throwError(() => new Error(
+        `Query too long. Please keep your query under ${this.MAX_INPUT_LENGTH} characters.`
+      ));
+    }
+    const trimmed = message;
 
     // 3. Governance gate: PII redaction + injection/content-safety check
     const inputCheck = this.governance.validateInput(trimmed);
