@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, timeout, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AgentRequest, AgentResponse } from '../models/models';
+import { GovernanceService } from './governance.service';
 
 @Injectable({ providedIn: 'root' })
 export class LyzrAgentService {
@@ -15,28 +16,7 @@ export class LyzrAgentService {
   // ── Input constraints ────────────────────────────────────────────────────────
   private readonly MAX_INPUT_LENGTH = 1000;
 
-  // ── Injection / goal-hijacking patterns (VAPT: direct injection, indirect
-  //    injection, goal hijacking, system-prompt retrieval) ─────────────────────
-  private readonly INJECTION_PATTERNS: RegExp[] = [
-    /ignore (all |your |previous )?instructions/gi,
-    /act as (a |an )?(different|new|another)/gi,
-    /forget (your |all |previous )?/gi,
-    /you are now/gi,
-    /pretend (you are|to be)/gi,
-    /jailbreak/gi,
-    /DAN mode/gi,
-    /developer mode/gi,
-    /override (your |system |previous )?/gi,
-    /disregard (your |all |previous )?/gi,
-    /new (role|persona|identity)/gi,
-    /simulate (being|a )/gi,
-    /\bsystem prompt\b/gi,
-    /reveal (your |the )?(system |hidden |internal )?prompt/gi,
-    /what (are|were) your (original |initial )?instructions/gi,
-    /\bprompt injection\b/gi
-  ];
-
-  // ── XSS patterns — strip from agent output before rendering ─────────────────
+  // ── XSS stripping — HTML/JS in agent output before Angular renders it ────────
   private readonly XSS_PATTERNS: RegExp[] = [
     /<script[\s\S]*?>/gi,
     /javascript:/gi,
@@ -44,7 +24,10 @@ export class LyzrAgentService {
     /<iframe[\s\S]*?>/gi
   ];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private governance: GovernanceService
+  ) {}
 
   // ── Internals ────────────────────────────────────────────────────────────────
 
@@ -53,14 +36,6 @@ export class LyzrAgentService {
       'Content-Type': 'application/json',
       'x-api-key': environment.lyzrApiKey
     });
-  }
-
-  private logSecurityEvent(type: string, detail: string): void {
-    console.warn('[SECURITY]', JSON.stringify({
-      type,
-      detail,
-      timestamp: new Date().toISOString()
-    }));
   }
 
   private checkRateLimit(agentId: string): void {
@@ -72,28 +47,8 @@ export class LyzrAgentService {
     this.lastCallTime[agentId] = now;
   }
 
-  private sanitiseInput(input: string): string {
-    // Enforce max length
-    if (input.length > this.MAX_INPUT_LENGTH) {
-      this.logSecurityEvent('INPUT_TOO_LONG',
-        `Input length ${input.length} exceeds limit — truncated`);
-      input = input.substring(0, this.MAX_INPUT_LENGTH);
-    }
-
-    // Block known injection / jailbreak patterns
-    for (const pattern of this.INJECTION_PATTERNS) {
-      if (pattern.test(input)) {
-        this.logSecurityEvent('INJECTION_BLOCKED',
-          `Pattern matched: ${pattern.source}`);
-        return '[BLOCKED: Invalid input detected]';
-      }
-    }
-
-    return input.trim();
-  }
-
-  private sanitiseOutput(response: string): string {
-    let safe = response;
+  private stripXss(text: string): string {
+    let safe = text;
     for (const pattern of this.XSS_PATTERNS) {
       safe = safe.replace(pattern, '[REMOVED]');
     }
@@ -103,19 +58,28 @@ export class LyzrAgentService {
   // ── Public API ───────────────────────────────────────────────────────────────
 
   callAgent(agentId: string, message: string, sessionId?: string): Observable<AgentResponse> {
-    // Rate-limit check
+    // 1. Rate limiting
     try {
       this.checkRateLimit(agentId);
     } catch (e: any) {
       return throwError(() => e);
     }
 
-    const sanitised = this.sanitiseInput(message);
+    // 2. Enforce max input length
+    const trimmed = message.length > this.MAX_INPUT_LENGTH
+      ? message.substring(0, this.MAX_INPUT_LENGTH)
+      : message;
+
+    // 3. Governance gate: PII redaction + injection/content-safety check
+    const inputCheck = this.governance.validateInput(trimmed);
+    if (!inputCheck.passed) {
+      return throwError(() => new Error('Your query could not be processed. Please rephrase and try again.'));
+    }
 
     const body: AgentRequest = {
       user_id: environment.userId,
       agent_id: agentId,
-      message: sanitised,
+      message: inputCheck.sanitisedText, // PII already redacted
       session_id: sessionId || `session-${Date.now()}`
     };
 
@@ -124,8 +88,13 @@ export class LyzrAgentService {
       { headers: this.getHeaders() }
     ).pipe(
       timeout(60000),
-      // Sanitise every response before any component sees it
-      map(res => ({ ...res, response: this.sanitiseOutput(res.response) })),
+      map(res => {
+        // 4. Governance output check (PII redaction in response)
+        const outputCheck = this.governance.validateOutput(res.response);
+        // 5. XSS strip (transport-level HTML safety)
+        const clean = this.stripXss(outputCheck.sanitisedText);
+        return { ...res, response: clean };
+      }),
       catchError((err: any) => {
         if (err.name !== 'TimeoutError') {
           console.error('Lyzr API error:', err);
