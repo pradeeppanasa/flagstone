@@ -12,10 +12,9 @@ export const environment = {
     fx:         '6a1db8f2e1bb0f24d59a05bc',
     settlement:       '6a1dc26d894f3fe88bd90740',
     schemeCompliance: '6a2244e338260b371a447edc',
-    kycManager:  'REPLACE_WITH_KYC_MANAGER_AGENT_ID',
-    kycDocCheck: 'REPLACE_WITH_KYC_DOC_CHECK_AGENT_ID',
-    kycExtract:  'REPLACE_WITH_KYC_EXTRACT_AGENT_ID',
-    kycRisk:     'REPLACE_WITH_KYC_RISK_AGENT_ID',
-    kycDecision: 'REPLACE_WITH_KYC_DECISION_AGENT_ID'
+    kybOrchestrator: '6a33e627f69e6f2bab3b7f14',  // main orchestrator — routes + risk + decision
+    kybKyc:          '6a317e3da3872d61f99b3111',  // doc quality check + extraction + identity
+    kybAmlMedia:     '6a31840e76d31ee6da83a533',  // AML adverse media search
+    kybPepSanctions: '6a3183723f1c07ea232e7bbd'   // PEP & sanctions screening
   }
 };

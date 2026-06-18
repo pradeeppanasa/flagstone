@@ -420,7 +420,7 @@ export class KycOnboardingComponent {
     slot.error = null;
 
     const prompt = QUALITY_PROMPT(slot.label);
-    const agentId = environment.agents['kycDocCheck'];
+    const agentId = environment.agents['kybKyc'];
 
     this.lyzr.callAgentWithDocument(agentId, prompt, slot.base64, slot.mimeType)
       .subscribe({
