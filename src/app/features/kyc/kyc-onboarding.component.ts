@@ -422,7 +422,8 @@ export class KycOnboardingComponent {
     const prompt = QUALITY_PROMPT(slot.label);
     const agentId = environment.agents['kybKyc'];
 
-    this.lyzr.callAgentWithDocument(agentId, prompt, slot.base64, slot.mimeType)
+    // Pass slot.id as sessionId — gives each document its own rate limit bucket
+    this.lyzr.callAgentWithDocument(agentId, prompt, slot.base64, slot.mimeType, `kyc-${slot.id}`)
       .subscribe({
         next: (res) => {
           slot.checking = false;

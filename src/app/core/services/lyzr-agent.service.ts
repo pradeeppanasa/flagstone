@@ -123,10 +123,15 @@ export class LyzrAgentService {
     mimeType: string,
     sessionId?: string
   ): Observable<AgentResponse> {
-    try { this.checkRateLimit(agentId); } catch (e: any) { return throwError(() => e); }
+    // Rate limit per document slot (sessionId), not per agentId —
+    // allows multiple documents to be checked in parallel without conflicts
+    const rateLimitKey = sessionId || `doc-${agentId}-${Date.now()}`;
+    try { this.checkRateLimit(rateLimitKey); } catch (e: any) { return throwError(() => e); }
 
-    if (prompt.length > this.MAX_INPUT_LENGTH) {
-      return throwError(() => new Error(`Query too long. Please keep under ${this.MAX_INPUT_LENGTH} characters.`));
+    // Document prompts are internally generated — allow up to 4000 chars
+    const MAX_DOC_PROMPT = 4000;
+    if (prompt.length > MAX_DOC_PROMPT) {
+      return throwError(() => new Error(`Document prompt too long (${prompt.length} chars).`));
     }
 
     const inputCheck = this.governance.validateInput(prompt);
