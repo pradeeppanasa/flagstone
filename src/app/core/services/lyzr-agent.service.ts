@@ -112,6 +112,55 @@ export class LyzrAgentService {
     );
   }
 
+  /**
+   * Vision call — sends a document image (base64) + text prompt to a Lyzr GPT-4o agent.
+   * Lyzr v3 multimodal format: content array with text + image_url parts.
+   */
+  callAgentWithDocument(
+    agentId: string,
+    prompt: string,
+    imageBase64: string,
+    mimeType: string,
+    sessionId?: string
+  ): Observable<AgentResponse> {
+    try { this.checkRateLimit(agentId); } catch (e: any) { return throwError(() => e); }
+
+    if (prompt.length > this.MAX_INPUT_LENGTH) {
+      return throwError(() => new Error(`Query too long. Please keep under ${this.MAX_INPUT_LENGTH} characters.`));
+    }
+
+    const inputCheck = this.governance.validateInput(prompt);
+    if (!inputCheck.passed) {
+      return throwError(() => new Error('Your query could not be processed. Please rephrase and try again.'));
+    }
+
+    const body = {
+      user_id: environment.userId,
+      agent_id: agentId,
+      session_id: sessionId || `session-${Date.now()}`,
+      message: inputCheck.sanitisedText,
+      // Lyzr GPT-4o vision: OpenAI-compatible content array
+      content: [
+        { type: 'text', text: inputCheck.sanitisedText },
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
+      ]
+    };
+
+    return this.http.post<AgentResponse>(
+      environment.lyzrBaseUrl, body,
+      { headers: this.getHeaders() }
+    ).pipe(
+      timeout(90000),
+      map(res => ({ ...res, response: this.stripXss(this.governance.validateOutput(res.response).sanitisedText) })),
+      catchError((err: any) => {
+        const msg = err.name === 'TimeoutError'
+          ? 'Document check is taking too long. Please try again.'
+          : 'Something went wrong during document check. Please try again.';
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
+
   callManager(message: string, sessionId?: string): Observable<AgentResponse> {
     return this.callAgent(environment.agents['manager'], message, sessionId);
   }

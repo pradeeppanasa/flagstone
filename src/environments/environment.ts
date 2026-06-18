@@ -11,6 +11,11 @@ export const environment = {
     contracts:  '6a1c863f80c734da121493ca',
     fx:         '6a1db8f2e1bb0f24d59a05bc',
     settlement:       '6a1dc26d894f3fe88bd90740',
-    schemeCompliance: '6a2244e338260b371a447edc'
+    schemeCompliance: '6a2244e338260b371a447edc',
+    kycManager:  'REPLACE_WITH_KYC_MANAGER_AGENT_ID',
+    kycDocCheck: 'REPLACE_WITH_KYC_DOC_CHECK_AGENT_ID',
+    kycExtract:  'REPLACE_WITH_KYC_EXTRACT_AGENT_ID',
+    kycRisk:     'REPLACE_WITH_KYC_RISK_AGENT_ID',
+    kycDecision: 'REPLACE_WITH_KYC_DECISION_AGENT_ID'
   }
 };

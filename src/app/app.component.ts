@@ -30,6 +30,9 @@ import { Component } from '@angular/core';
           <li><a routerLink="/scheme-compliance" routerLinkActive="active">
             <span class="nav-icon">🃏</span> Scheme Compliance
           </a></li>
+          <li><a routerLink="/kyc" routerLinkActive="active">
+            <span class="nav-icon">🏢</span> KYC / KYB
+          </a></li>
         </ul>
         <div class="sidebar-footer">
           <span class="powered">Powered by Lyzr AI</span>

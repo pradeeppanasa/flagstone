@@ -96,6 +96,26 @@ export interface SettlementAlert {
   confidence_score: number;
 }
 
+export interface DocQualityCheck {
+  pass: boolean;
+  issue: string;
+}
+
+export interface DocQualityResult {
+  document_type: string;
+  overall_status: 'pass' | 'fail' | 'review';
+  checks: {
+    readable:    DocQualityCheck;
+    genuine:     DocQualityCheck;
+    complete:    DocQualityCheck;
+    current:     DocQualityCheck;
+    is_original: DocQualityCheck;
+  };
+  issues: string[];
+  recommendation: string;
+  confidence_score: number;
+}
+
 export interface ChatMessage {
   role: 'user' | 'agent';
   content: string;
