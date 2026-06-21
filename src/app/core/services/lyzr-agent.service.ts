@@ -113,8 +113,9 @@ export class LyzrAgentService {
   }
 
   /**
-   * Vision call — sends a document image (base64) + text prompt to a Lyzr GPT-4o agent.
-   * Lyzr v3 multimodal format: content array with text + image_url parts.
+   * Vision call — used for Gate 2 OCR extraction (kybKyc agent).
+   * Note: Lyzr v3 REST API does not forward base64 images to the underlying model.
+   * Gate 1 quality checks use client-side pixel analysis instead (see kyc-onboarding.component.ts).
    */
   callAgentWithDocument(
     agentId: string,
@@ -123,12 +124,9 @@ export class LyzrAgentService {
     mimeType: string,
     sessionId?: string
   ): Observable<AgentResponse> {
-    // Rate limit per document slot (sessionId), not per agentId —
-    // allows multiple documents to be checked in parallel without conflicts
     const rateLimitKey = sessionId || `doc-${agentId}-${Date.now()}`;
     try { this.checkRateLimit(rateLimitKey); } catch (e: any) { return throwError(() => e); }
 
-    // Document prompts are internally generated — allow up to 4000 chars
     const MAX_DOC_PROMPT = 4000;
     if (prompt.length > MAX_DOC_PROMPT) {
       return throwError(() => new Error(`Document prompt too long (${prompt.length} chars).`));
@@ -140,13 +138,12 @@ export class LyzrAgentService {
     }
 
     const body = {
-      user_id: environment.userId,
-      agent_id: agentId,
+      user_id:    environment.userId,
+      agent_id:   agentId,
       session_id: sessionId || `session-${Date.now()}`,
-      message: inputCheck.sanitisedText,
-      // Lyzr GPT-4o vision: OpenAI-compatible content array
+      message:    inputCheck.sanitisedText,
       content: [
-        { type: 'text', text: inputCheck.sanitisedText },
+        { type: 'text',      text:      inputCheck.sanitisedText },
         { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
       ]
     };
@@ -158,9 +155,21 @@ export class LyzrAgentService {
       timeout(90000),
       map(res => ({ ...res, response: this.stripXss(this.governance.validateOutput(res.response).sanitisedText) })),
       catchError((err: any) => {
-        const msg = err.name === 'TimeoutError'
-          ? 'Document check is taking too long. Please try again.'
-          : 'Something went wrong during document check. Please try again.';
+        let msg: string;
+        if (err.name === 'TimeoutError') {
+          msg = 'Document check is taking too long. Please try again.';
+        } else if (err.status === 429) {
+          msg = 'Too many requests. Please wait a moment and try again.';
+        } else if (err.status === 401 || err.status === 403) {
+          msg = `Authentication error (${err.status}). Check the API key.`;
+        } else if (err.status === 400 || err.status === 422) {
+          msg = `Request error (${err.status}): ${err.error?.detail || err.error?.message || 'Invalid request format'}.`;
+        } else if (err.status >= 500) {
+          msg = `Lyzr server error (${err.status}). Please try again.`;
+        } else {
+          msg = `Document check failed${err.status ? ' (' + err.status + ')' : ''}: ${err.error?.detail || err.message || 'unknown error'}.`;
+        }
+        console.error('callAgentWithDocument error:', err.status, err.error || err.message);
         return throwError(() => new Error(msg));
       })
     );
@@ -170,15 +179,53 @@ export class LyzrAgentService {
     return this.callAgent(environment.agents['manager'], message, sessionId);
   }
 
-  parseJSON<T>(response: AgentResponse): T | null {
-    try {
-      return JSON.parse(response.response) as T;
-    } catch {
-      const match = response.response.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (match) {
-        try { return JSON.parse(match[1].trim()) as T; } catch { }
-      }
-      return null;
+  // Orchestration call — carries OCR-extracted data so needs a higher char limit than callAgent.
+  callAgentKyb(agentId: string, message: string, sessionId?: string): Observable<AgentResponse> {
+    const rateLimitKey = sessionId || `kyb-${agentId}-${Date.now()}`;
+    try { this.checkRateLimit(rateLimitKey); } catch (e: any) { return throwError(() => e); }
+
+    const MAX_KYB_LENGTH = 8000;
+    if (message.length > MAX_KYB_LENGTH) {
+      return throwError(() => new Error(`Orchestration message too long (${message.length} chars).`));
     }
+
+    const inputCheck = this.governance.validateInput(message);
+    if (!inputCheck.passed) {
+      return throwError(() => new Error('Your query could not be processed. Please rephrase and try again.'));
+    }
+
+    const body: AgentRequest = {
+      user_id: environment.userId,
+      agent_id: agentId,
+      message: inputCheck.sanitisedText,
+      session_id: sessionId || `kyb-session-${Date.now()}`
+    };
+
+    return this.http.post<AgentResponse>(environment.lyzrBaseUrl, body, { headers: this.getHeaders() }).pipe(
+      timeout(120000),
+      map(res => ({ ...res, response: this.stripXss(this.governance.validateOutput(res.response).sanitisedText) })),
+      catchError((err: any) => {
+        const msg = err.name === 'TimeoutError'
+          ? 'KYB verification timed out. Please try again.'
+          : err.status === 404
+            ? `Agent not found (404). Check agent ID "${agentId}" is still active in Lyzr Studio.`
+          : err.status >= 500 ? `Lyzr server error (${err.status}). Please try again.`
+          : err.message || 'KYB verification failed.';
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
+
+  parseJSON<T>(response: AgentResponse): T | null {
+    const text = response.response;
+    // 1. Direct parse
+    try { return JSON.parse(text) as T; } catch { /* fall through */ }
+    // 2. Fenced code block ```json ... ```
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenced) { try { return JSON.parse(fenced[1].trim()) as T; } catch { /* fall through */ } }
+    // 3. First { ... } object anywhere in the response (agent adds prose before/after JSON)
+    const obj = text.match(/(\{[\s\S]*\})/);
+    if (obj) { try { return JSON.parse(obj[1].trim()) as T; } catch { /* fall through */ } }
+    return null;
   }
 }

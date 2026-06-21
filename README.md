@@ -1,3 +1,13 @@
+---
+title: Panasa Intelligence Platform
+emoji: 🏦
+colorFrom: blue
+colorTo: orange
+sdk: docker
+app_port: 7860
+license: mit
+---
+
 # Flagstone Intelligence Platform — Angular App
 
 ## Setup in VS Code (5 minutes)
