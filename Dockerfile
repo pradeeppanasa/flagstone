@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --ignore-scripts
 COPY . .
-RUN npm run build -- --configuration=production
+RUN NODE_OPTIONS="--max_old_space_size=4096" npm run build -- --configuration=production
 
 # Stage 2 — serve with nginx on port 7860 (HF Spaces default)
 FROM nginx:1.27-alpine
