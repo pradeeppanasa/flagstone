@@ -204,7 +204,7 @@ interface ReviewData {
       ✓ All {{ passCount }} documents scanned successfully — data extracted and ready for verification.
     </div>
     <button class="btn-primary"
-            *ngIf="allPassed && !showReview && !kybPhase1Loading && !showPhase1Review && !kybPhase2aLoading && !showPhase2aReview && !kybLoading && !kybResult"
+            *ngIf="allPassed && !showReview && !kybPhase1Loading && !showPhase1Review && !kybPhase2aLoading && !showPhase2aReview && !kybPhase2bLoading && !showPhase2bReview && !kybLoading && !kybResult"
             style="margin-top:16px" (click)="submitKYB()">
       {{ gateActionLabel }}
     </button>
@@ -219,8 +219,8 @@ interface ReviewData {
       <li>📋 Gate 2 — Review &amp; confirm extracted company data</li>
       <li>🏛️ Gate 3 — Validate against Companies House registry</li>
       <li>👥 Gate 4-5 — Verify directors and beneficial owners</li>
-      <li>🛡️ Gate 6 — Screen for PEP and sanctions (user review)</li>
-      <li>🪪 Gate 7 — KYC identity check for primary director</li>
+      <li>🛡️ Gate 6 — Screen for PEP and sanctions (user review checkpoint)</li>
+      <li>🪪 Gate 7 — KYC identity check for primary director (user review checkpoint)</li>
       <li>📰 Gate 8 — AML adverse media check</li>
       <li>📊 Gate 9 — Calculate risk score and generate decision</li>
     </ul>
@@ -423,9 +423,9 @@ interface ReviewData {
   </div>
 
   <!-- Phase 2a review — PEP & Sanctions result, user confirms before KYC -->
-  <div class="section-card phase1-review-card" *ngIf="showPhase2aReview && kybPhase2aResult && !kybLoading && !kybPhase2aLoading && !kybResult">
+  <div class="section-card phase1-review-card" *ngIf="showPhase2aReview && kybPhase2aResult && !kybPhase2bLoading && !showPhase2bReview && !kybLoading && !kybPhase2aLoading && !kybResult">
     <h2 class="section-title">Gate 6 Complete — PEP &amp; Sanctions Result</h2>
-    <p class="section-note">Sanctions and PEP screening is done. Review the result below, then proceed to run KYC identity verification and AML checks.</p>
+    <p class="section-note">Sanctions and PEP screening is done. Review the result below, then proceed to KYC identity verification.</p>
 
     <div class="phase1-results">
       <div class="p1-gate-row"
@@ -442,18 +442,35 @@ interface ReviewData {
       </div>
     </div>
 
-    <div class="phase1-actions">
-      <button class="btn-primary" (click)="proceedToPhase2b()">Proceed to KYC Identity Check →</button>
-      <button class="btn-secondary" (click)="showPhase2aReview = false; showPhase1Review = true">← Back to Registry Results</button>
+    <!-- Sanctions match — hard block -->
+    <div *ngIf="kybPhase2aResult.sanctions_match" class="sanctions-block">
+      <div class="sanctions-alert">
+        ⛔ Onboarding Blocked — Mandatory Sanctions Match<br>
+        <span>This entity or associated persons appear on a mandatory sanctions list (OFAC / UN / EU / HMT). Onboarding cannot proceed under applicable law.</span>
+      </div>
+      <div class="phase1-actions">
+        <button class="btn-secondary" (click)="startNew()">Start New Onboarding</button>
+      </div>
+    </div>
+
+    <!-- Clear or PEP-only — allow proceeding -->
+    <div *ngIf="!kybPhase2aResult.sanctions_match">
+      <div *ngIf="kybPhase2aResult.pep_identified" class="pep-warning-banner">
+        ⚠ PEP Identified — Enhanced Due Diligence required before final approval
+      </div>
+      <div class="phase1-actions">
+        <button class="btn-primary" (click)="proceedToPhase2b()">Proceed to KYC Identity Check →</button>
+        <button class="btn-secondary" (click)="showPhase2aReview = false; showPhase1Review = true">← Back to Registry Results</button>
+      </div>
     </div>
   </div>
 
-  <!-- Phase 2b loading state (Gates 7-9) -->
-  <div class="section-card" *ngIf="kybLoading">
+  <!-- Phase 2b loading state (Gate 7 — KYC Identity) -->
+  <div class="section-card" *ngIf="kybPhase2bLoading">
     <div style="text-align:center;padding:32px 20px 16px">
       <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 16px"></div>
-      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running KYB Verification — Final Phase</h2>
-      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Running KYC identity check, AML adverse media and risk scoring…</p>
+      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running Gate 7 — KYC Identity Check</h2>
+      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Verifying director identity documents…</p>
     </div>
     <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
       <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
@@ -461,13 +478,54 @@ interface ReviewData {
       <div class="gate-progress-row gate-done-row">✓ Gate 5 — Beneficial owners identified</div>
       <div class="gate-progress-row gate-done-row">✓ Gate 6 — PEP and sanctions screening complete</div>
       <div class="gate-progress-row">⏳ Gate 7 — KYC identity verification</div>
+    </div>
+  </div>
+
+  <!-- Phase 2b review — KYC Identity result, user confirms before Adverse Media -->
+  <div class="section-card phase1-review-card" *ngIf="showPhase2bReview && kybPhase2bResult && !kybLoading && !kybPhase2bLoading && !kybResult">
+    <h2 class="section-title">Gate 7 Complete — KYC Identity Result</h2>
+    <p class="section-note">KYC identity verification is done. Review the result below, then proceed to run the AML adverse media check.</p>
+
+    <div class="phase1-results">
+      <div class="p1-gate-row"
+           [class.p1-pass]="kybPhase2bResult.kyc_identity_verified"
+           [class.p1-fail]="!kybPhase2bResult.kyc_identity_verified">
+        <div class="p1-icon">{{ kybPhase2bResult.kyc_identity_verified ? '✓' : '✗' }}</div>
+        <div class="p1-body">
+          <div class="p1-name">Gate 7 — KYC Identity Check</div>
+          <div class="p1-status">{{ kybPhase2bResult.kyc_identity_verified ? 'VERIFIED' : 'FAILED' }}</div>
+          <div class="p1-detail" *ngIf="kybPhase2bResult.kyc_identity_summary">{{ kybPhase2bResult.kyc_identity_summary }}</div>
+        </div>
+        <div class="p1-score" *ngIf="kybPhase2bResult.kyc_identity_risk_score != null">Risk: {{ kybPhase2bResult.kyc_identity_risk_score }}</div>
+      </div>
+    </div>
+
+    <div class="phase1-actions">
+      <button class="btn-primary" (click)="proceedToPhase2c()">Proceed to Adverse Media Check →</button>
+      <button class="btn-secondary" (click)="showPhase2bReview = false; showPhase2aReview = true">← Back to PEP &amp; Sanctions</button>
+    </div>
+  </div>
+
+  <!-- Phase 2c loading state (Gates 8-9 — AML + Risk Scoring) -->
+  <div class="section-card" *ngIf="kybLoading">
+    <div style="text-align:center;padding:32px 20px 16px">
+      <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 16px"></div>
+      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running Gates 8–9 — AML &amp; Risk Scoring</h2>
+      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Adverse media check and final risk scoring in progress…</p>
+    </div>
+    <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
+      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director information verified</div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 5 — Beneficial owners identified</div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 6 — PEP and sanctions screening complete</div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 7 — KYC identity check complete</div>
       <div class="gate-progress-row">⏳ Gate 8 — AML adverse media check</div>
-      <div class="gate-progress-row">⏳ Gate 9 — Risk score and decision</div>
+      <div class="gate-progress-row">⏳ Gate 9 — Risk scoring and onboarding decision</div>
     </div>
   </div>
 
   <!-- Error state -->
-  <div class="section-card" *ngIf="kybError && !kybLoading && !kybPhase1Loading && !kybPhase2aLoading && !showPhase1Review && !showPhase2aReview && !kybResult">
+  <div class="section-card" *ngIf="kybError && !kybLoading && !kybPhase1Loading && !kybPhase2aLoading && !kybPhase2bLoading && !showPhase1Review && !showPhase2aReview && !showPhase2bReview && !kybResult">
     <div style="padding:16px;background:#fee2e2;border-radius:8px;color:#991b1b;font-size:13px">✗ {{ kybError }}</div>
     <button class="btn-secondary" style="margin-top:12px" (click)="retryKyb()">Try Again</button>
   </div>
@@ -539,6 +597,37 @@ interface ReviewData {
         <div *ngIf="kybResult.raw" style="margin-top:16px">
           <div class="result-section-title" style="margin-bottom:8px">Raw Response</div>
           <pre style="font-size:10px;color:#94a3b8;overflow-x:auto;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">{{ kybResult.raw }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score breakdown — per-gate risk + processor liability -->
+    <div class="score-breakdown-section">
+      <h3 class="result-section-title" style="margin-bottom:12px">Risk Score Breakdown</h3>
+      <div class="score-grid">
+        <ng-container *ngFor="let gate of gateResults">
+          <div class="score-item" *ngIf="gate.score != null"
+               [class.si-pass]="gate.pass" [class.si-warn]="!gate.pass && gate.warning" [class.si-fail]="!gate.pass && !gate.warning">
+            <div class="si-name">{{ gate.name }}</div>
+            <div class="si-bar-track">
+              <div class="si-bar" [style.width]="gate.score + '%'"></div>
+            </div>
+            <div class="si-val">{{ gate.score }}<span class="si-denom">/100</span></div>
+          </div>
+        </ng-container>
+        <div class="score-item si-total" *ngIf="computedRiskScore != null">
+          <div class="si-name">Total Risk Score</div>
+          <div class="si-bar-track">
+            <div class="si-bar" [style.width]="computedRiskScore + '%'"></div>
+          </div>
+          <div class="si-val">{{ computedRiskScore }}<span class="si-denom">/100</span></div>
+        </div>
+        <div class="score-item si-liability" *ngIf="processorLiabilityScore != null">
+          <div class="si-name">Processor Liability Score</div>
+          <div class="si-bar-track">
+            <div class="si-bar" [style.width]="processorLiabilityScore + '%'"></div>
+          </div>
+          <div class="si-val">{{ processorLiabilityScore }}<span class="si-denom">/100</span></div>
         </div>
       </div>
     </div>
@@ -619,14 +708,14 @@ interface ReviewData {
           {{ phase2aData?.sanctions_match == null ? (kybPhase2aLoading ? 'RUNNING' : 'PENDING') : phase2aData.sanctions_match ? 'SANCTIONED' : phase2aData.pep_identified ? 'PEP HIT' : 'CLEAR' }}
         </div>
       </div>
-      <div class="gate-track-item" [class.gt-active]="kybLoading" [class.gt-done]="kybResult?.kyc_identity_verified != null">
+      <div class="gate-track-item" [class.gt-active]="kybPhase2bLoading" [class.gt-done]="phase2bData?.kyc_identity_verified != null">
         <div class="gt-dot">7</div>
         <div class="gt-info">
           <div class="gt-name">Gate 7 — KYC Identity Check</div>
           <div class="gt-status">Director ID verified · Biometric / liveness (if Sumsub)</div>
         </div>
-        <div class="gt-badge" [class.gt-b-done]="kybResult?.kyc_identity_verified" [class.gt-b-fail]="kybResult?.kyc_identity_verified === false" [class.gt-b-active]="kybLoading">
-          {{ kybResult?.kyc_identity_verified == null ? (kybLoading ? 'RUNNING' : 'PENDING') : kybResult.kyc_identity_verified ? 'VERIFIED' : 'FAILED' }}
+        <div class="gt-badge" [class.gt-b-done]="phase2bData?.kyc_identity_verified" [class.gt-b-fail]="phase2bData?.kyc_identity_verified === false" [class.gt-b-active]="kybPhase2bLoading">
+          {{ phase2bData?.kyc_identity_verified == null ? (kybPhase2bLoading ? 'RUNNING' : 'PENDING') : phase2bData.kyc_identity_verified ? 'VERIFIED' : 'FAILED' }}
         </div>
       </div>
       <div class="gate-track-item" [class.gt-active]="kybLoading" [class.gt-done]="kybResult?.aml_adverse_media_summary != null">
@@ -932,6 +1021,36 @@ interface ReviewData {
     /* ── Entity details validation errors ───────────────────── */
     .entity-errors { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; margin-top: 12px; }
     .entity-errors span { font-size: 12px; color: #991b1b; font-weight: 600; }
+
+    /* ── Sanctions hard-block & PEP warning in Phase 2a ─────── */
+    .sanctions-block { margin-top: 16px; }
+    .sanctions-alert { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 14px 16px; color: #991b1b; font-size: 13px; font-weight: 600; line-height: 1.5; }
+    .sanctions-alert span { font-weight: 400; display: block; margin-top: 4px; }
+    .pep-warning-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px 14px; color: #92400e; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+
+    /* ── Score breakdown section ─────────────────────────────── */
+    .score-breakdown-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+    .score-grid { display: flex; flex-direction: column; gap: 8px; }
+    .score-item { display: grid; grid-template-columns: 220px 1fr 52px; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; background: #f8fafc; }
+    .si-name { font-size: 12px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .si-bar-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .si-bar { height: 100%; border-radius: 4px; background: #94a3b8; transition: width 0.4s; }
+    .si-val { font-size: 12px; font-weight: 700; color: #475569; text-align: right; white-space: nowrap; }
+    .si-denom { font-weight: 400; color: #94a3b8; font-size: 10px; }
+    .score-item.si-pass .si-bar { background: #22c55e; }
+    .score-item.si-warn .si-bar { background: #f59e0b; }
+    .score-item.si-fail .si-bar { background: #ef4444; }
+    .score-item.si-pass .si-val { color: #15803d; }
+    .score-item.si-warn .si-val { color: #b45309; }
+    .score-item.si-fail .si-val { color: #b91c1c; }
+    .score-item.si-total { background: #f1f5f9; border: 1px solid #cbd5e1; }
+    .score-item.si-total .si-name { font-weight: 700; color: #1e3a5f; }
+    .score-item.si-total .si-bar { background: #3b82f6; }
+    .score-item.si-total .si-val { color: #1e3a5f; font-size: 13px; }
+    .score-item.si-liability { background: #faf5ff; border: 1px solid #d8b4fe; }
+    .score-item.si-liability .si-name { font-weight: 700; color: #7c3aed; }
+    .score-item.si-liability .si-bar { background: #9333ea; }
+    .score-item.si-liability .si-val { color: #7c3aed; font-size: 13px; }
   `]
 })
 export class KycOnboardingComponent {
@@ -1316,6 +1435,10 @@ export class KycOnboardingComponent {
   kybPhase2aResult: any = null;
   showPhase2aReview = false;
 
+  kybPhase2bLoading = false;
+  kybPhase2bResult: any = null;
+  showPhase2bReview = false;
+
   entityErrors: string[] = [];
 
   submitKYB(): void {
@@ -1590,7 +1713,50 @@ export class KycOnboardingComponent {
     const p1  = this.kybPhase1Result;
     const p2a = this.kybPhase2aResult;
 
-    this.showPhase2aReview = false;
+    this.showPhase2aReview  = false;
+    this.kybPhase2bLoading  = true;
+    this.kybError           = null;
+
+    const dirs = r.directors
+      .filter(d => d.fullName.trim())
+      .map((d, i) =>
+        `Director ${i + 1}: ${d.fullName}, DOB: ${d.dob || 'N/A'}, Nationality: ${d.nationality || 'N/A'}, ID: ${d.idType} ${d.idNumber || 'N/A'}`
+      ).join('\n');
+
+    const message =
+      `KYB ONBOARDING REQUEST — PHASE 2B (Gate 7 only)\n\n` +
+      `ENTITY\nCompany: ${r.companyName}\nReg: ${r.registrationNumber}\n\n` +
+      `DIRECTORS\n${dirs || 'None declared'}\n\n` +
+      `COMPLETED GATES:\n` +
+      `Gate 3: ${p1.company_registry_verified ? 'PASS' : 'FAIL'}. ${p1.company_registry_summary || ''}\n` +
+      `Gate 4: ${p1.director_verification_matched ? 'MATCHED' : 'MISMATCH'}. ${p1.director_verification_summary || ''}\n` +
+      `Gate 5: ${p1.ubo_identification_declared ? 'DECLARED' : 'MISSING'}. ${p1.ubo_identification_summary || ''}\n` +
+      `Gate 6: ${p2a.sanctions_match ? 'SANCTIONED' : p2a.pep_identified ? 'PEP HIT' : 'CLEAR'}. ${p2a.pep_sanctions_summary || ''}\n\n` +
+      `INSTRUCTIONS — Run ONLY Gate 7. STOP after Gate 7.\n` +
+      `Gate 7: Run KYC identity verification for the primary director.\n` +
+      `Return JSON: kyc_identity_verified (bool), kyc_identity_summary (string ≤80 chars), kyc_identity_risk_score (0-20).`;
+
+    this.lyzr.callAgentKyb(environment.agents['kybOrchestrator'], message, `kyb-p2b-${Date.now()}`).subscribe({
+      next: (res) => {
+        this.kybPhase2bLoading = false;
+        this.kybPhase2bResult  = this.lyzr.parseJSON<any>(res) ?? { raw: res.response };
+        this.showPhase2bReview = true;
+      },
+      error: (err: any) => {
+        this.kybPhase2bLoading = false;
+        this.kybError = err.message || 'Gate 7 KYC Identity check failed. Please try again.';
+      }
+    });
+  }
+
+  proceedToPhase2c(): void {
+    if (!this.reviewData || !this.kybPhase1Result || !this.kybPhase2aResult || !this.kybPhase2bResult) return;
+    const r   = this.reviewData;
+    const p1  = this.kybPhase1Result;
+    const p2a = this.kybPhase2aResult;
+    const p2b = this.kybPhase2bResult;
+
+    this.showPhase2bReview = false;
     this.kybLoading        = true;
     this.kybError          = null;
 
@@ -1605,8 +1771,12 @@ export class KycOnboardingComponent {
         `UBO ${i + 1}: ${u.fullName}, Shareholding: ${u.shareholding || 'Unknown'}%`
       ).join('\n');
 
+    const subtotal = (p1.company_registry_risk_score ?? 0) + (p1.director_risk_score ?? 0) +
+                     (p1.ubo_risk_score ?? 0) + (p2a.pep_sanctions_risk_score ?? 0) +
+                     (p2b.kyc_identity_risk_score ?? 0);
+
     const message =
-      `KYB ONBOARDING REQUEST — PHASE 2B (Gates 7-9)\n\n` +
+      `KYB ONBOARDING REQUEST — PHASE 2C (Gates 8-9)\n\n` +
       `ENTITY\nCompany: ${r.companyName}\nReg: ${r.registrationNumber}\n\n` +
       `DIRECTORS\n${dirs || 'None declared'}\n\n` +
       `BENEFICIAL OWNERS\n${ubos || 'None declared'}\n\n` +
@@ -1614,35 +1784,35 @@ export class KycOnboardingComponent {
       `Gate 3: ${p1.company_registry_verified ? 'PASS' : 'FAIL'}. ${p1.company_registry_summary || ''} (risk: ${p1.company_registry_risk_score ?? 0})\n` +
       `Gate 4: ${p1.director_verification_matched ? 'MATCHED' : 'MISMATCH'}. ${p1.director_verification_summary || ''} (risk: ${p1.director_risk_score ?? 0})\n` +
       `Gate 5: ${p1.ubo_identification_declared ? 'DECLARED' : 'MISSING'}. ${p1.ubo_identification_summary || ''} (risk: ${p1.ubo_risk_score ?? 0})\n` +
-      `Gate 6: ${p2a.sanctions_match ? 'SANCTIONED' : p2a.pep_identified ? 'PEP HIT' : 'CLEAR'}. ${p2a.pep_sanctions_summary || ''} (risk: ${p2a.pep_sanctions_risk_score ?? 0})\n\n` +
-      `INSTRUCTIONS — Run ONLY Gates 7, 8, and 9:\n` +
-      `Gate 7: Run KYC identity verification for the primary director. ` +
-      `Return kyc_identity_verified (bool), kyc_identity_summary (≤80 chars), kyc_identity_risk_score (0-20).\n` +
-      `Gate 8: Run AML adverse media check for company and all directors. ` +
+      `Gate 6: ${p2a.sanctions_match ? 'SANCTIONED' : p2a.pep_identified ? 'PEP HIT' : 'CLEAR'}. ${p2a.pep_sanctions_summary || ''} (risk: ${p2a.pep_sanctions_risk_score ?? 0})\n` +
+      `Gate 7: ${p2b.kyc_identity_verified ? 'VERIFIED' : 'FAILED'}. ${p2b.kyc_identity_summary || ''} (risk: ${p2b.kyc_identity_risk_score ?? 0})\n\n` +
+      `INSTRUCTIONS — Run ONLY Gates 8 and 9:\n` +
+      `Gate 8: Run AML adverse media check for company and all directors/UBOs. ` +
       `Return adverse_media_found (bool), aml_adverse_media_summary (≤80 chars), aml_risk_score (0-20).\n` +
-      `Gate 9: Sum all gate scores — subtotal from Gates 3-6: ` +
-      `${(p1.company_registry_risk_score ?? 0) + (p1.director_risk_score ?? 0) + (p1.ubo_risk_score ?? 0) + (p2a.pep_sanctions_risk_score ?? 0)}. ` +
-      `Add Gate 7 and Gate 8 scores for overall_risk_score. ` +
+      `Gate 9: Sum all gate scores — subtotal from Gates 3-7: ${subtotal}. ` +
+      `Add Gate 8 score for overall_risk_score (integer 0-100). ` +
       `Decision: APPROVED (≤30), MANUAL_REVIEW (31-60), REJECTED (>60). ` +
       `Return executive_summary (≤150 chars) and key_findings array.\n\n` +
       `Return complete KYB_Case_Summary JSON for all gates.`;
 
-    this.lyzr.callAgentKyb(environment.agents['kybOrchestrator'], message, `kyb-p2b-${Date.now()}`).subscribe({
+    this.lyzr.callAgentKyb(environment.agents['kybOrchestrator'], message, `kyb-p2c-${Date.now()}`).subscribe({
       next: (res) => {
         this.kybLoading = false;
-        const p2b = this.lyzr.parseJSON<any>(res) ?? { raw: res.response };
-        this.kybResult = { ...p1, ...p2a, ...p2b };
+        const p2c = this.lyzr.parseJSON<any>(res) ?? { raw: res.response };
+        this.kybResult = { ...p1, ...p2a, ...p2b, ...p2c };
       },
       error: (err: any) => {
         this.kybLoading = false;
-        this.kybError = err.message || 'KYB Phase 2B verification failed. Please try again.';
+        this.kybError = err.message || 'KYB Phase 2C verification failed. Please try again.';
       }
     });
   }
 
   retryKyb(): void {
     this.kybError = null;
-    if (this.kybPhase2aResult) {
+    if (this.kybPhase2bResult) {
+      this.showPhase2bReview = true;
+    } else if (this.kybPhase2aResult) {
       this.showPhase2aReview = true;
     } else if (this.kybPhase1Result) {
       this.showPhase1Review = true;
@@ -1670,6 +1840,9 @@ export class KycOnboardingComponent {
     this.kybPhase2aLoading = false;
     this.kybPhase2aResult  = null;
     this.showPhase2aReview = false;
+    this.kybPhase2bLoading = false;
+    this.kybPhase2bResult  = null;
+    this.showPhase2bReview = false;
     this.entityErrors      = [];
     this.entityName        = '';
     this.jurisdiction     = '';
@@ -1711,6 +1884,23 @@ export class KycOnboardingComponent {
 
   get phase1Data():  any { return this.kybResult ?? this.kybPhase1Result  ?? {}; }
   get phase2aData(): any { return this.kybResult ?? this.kybPhase2aResult ?? {}; }
+  get phase2bData(): any { return this.kybResult ?? this.kybPhase2bResult ?? {}; }
+
+  // Regulatory-weighted liability score for the payment processor.
+  // PEP/Sanctions and AML hits carry the highest compliance liability.
+  get processorLiabilityScore(): number | null {
+    if (!this.kybResult) return null;
+    const r = this.kybResult;
+    const score = Math.min(100, Math.round(
+      (r.pep_sanctions_risk_score                         ?? 0) * 1.6 +
+      (r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? 0) * 1.4 +
+      (r.company_registry_risk_score                      ?? 0) * 0.9 +
+      (r.director_risk_score                              ?? 0) * 0.7 +
+      (r.ubo_risk_score                                   ?? 0) * 0.7 +
+      (r.kyc_identity_risk_score                          ?? 0) * 0.7
+    ));
+    return score > 0 ? score : null;
+  }
 
   get gateResults(): any[] {
     if (!this.kybResult) return [];
@@ -1795,12 +1985,7 @@ export class KycOnboardingComponent {
 
   get gateActionLabel(): string {
     if (this.kybLoading) return 'Running KYB Verification…';
-    if (this.showReview) {
-      const reg = this.reviewData?.registrationNumber?.trim();
-      return reg
-        ? `Validate ${reg} against Companies House →`
-        : 'Validate against Companies House →';
-    }
+    if (this.showReview) return 'Validate against Companies House →';
     return 'Proceed to Gate 2: Review & Enter Data →';
   }
 }
