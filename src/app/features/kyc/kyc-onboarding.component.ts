@@ -483,15 +483,36 @@ interface ReviewData {
 
     <div class="phase1-results">
       <div class="p1-gate-row"
-           [class.p1-pass]="kybPhase2bResult.kyc_identity_verified"
-           [class.p1-fail]="!kybPhase2bResult.kyc_identity_verified">
-        <div class="p1-icon">{{ kybPhase2bResult.kyc_identity_verified ? '✓' : '✗' }}</div>
+           [class.p1-pass]="kybPhase2bResult.kyc_identity_decision === 'GREEN'"
+           [class.p1-warn]="kybPhase2bResult.kyc_identity_decision === 'MANUAL_REVIEW'"
+           [class.p1-fail]="kybPhase2bResult.kyc_identity_decision === 'FAIL' || (!kybPhase2bResult.kyc_identity_verified && !kybPhase2bResult.kyc_identity_decision)">
+        <div class="p1-icon">{{ kybPhase2bResult.kyc_identity_decision === 'GREEN' ? '✓' : kybPhase2bResult.kyc_identity_decision === 'MANUAL_REVIEW' ? '⚠' : '✗' }}</div>
         <div class="p1-body">
-          <div class="p1-name">Gate 7 — KYC Identity Check</div>
-          <div class="p1-status">{{ kybPhase2bResult.kyc_identity_verified ? 'VERIFIED' : 'FAILED' }}</div>
+          <div class="p1-name">Gate 7 — KYC Identity Check
+            <span *ngIf="kybPhase2bResult.kyc_identity_decision" class="kyc-decision-badge"
+                  [class.badge-green]="kybPhase2bResult.kyc_identity_decision === 'GREEN'"
+                  [class.badge-review]="kybPhase2bResult.kyc_identity_decision === 'MANUAL_REVIEW'"
+                  [class.badge-fail]="kybPhase2bResult.kyc_identity_decision === 'FAIL'">
+              {{ kybPhase2bResult.kyc_identity_decision }}
+            </span>
+          </div>
+          <div class="p1-status">{{ kybPhase2bResult.kyc_identity_verified ? 'VERIFIED' : 'FAILED' }}
+            <span *ngIf="kybPhase2bResult.kyc_identity_risk_level" class="kyc-risk-level"
+                  [class.risk-low]="kybPhase2bResult.kyc_identity_risk_level === 'low'"
+                  [class.risk-medium]="kybPhase2bResult.kyc_identity_risk_level === 'medium'"
+                  [class.risk-high]="kybPhase2bResult.kyc_identity_risk_level === 'high'">
+              {{ kybPhase2bResult.kyc_identity_risk_level | uppercase }} RISK
+            </span>
+          </div>
           <div class="p1-detail" *ngIf="kybPhase2bResult.kyc_identity_summary">{{ kybPhase2bResult.kyc_identity_summary }}</div>
+          <div class="p1-detail" *ngIf="kybPhase2bResult.kyc_identity_reject_reason" style="color:#991b1b;margin-top:3px">
+            Reject reason: {{ kybPhase2bResult.kyc_identity_reject_reason }}
+          </div>
         </div>
-        <div class="p1-score" *ngIf="kybPhase2bResult.kyc_identity_risk_score != null">Risk: {{ kybPhase2bResult.kyc_identity_risk_score }}</div>
+        <div class="p1-score" *ngIf="kybPhase2bResult.kyc_identity_confidence != null">
+          {{ (kybPhase2bResult.kyc_identity_confidence * 100).toFixed(0) }}%<br>
+          <span style="font-size:9px;font-weight:400;color:#64748b">confidence</span>
+        </div>
       </div>
     </div>
 
@@ -1016,6 +1037,16 @@ interface ReviewData {
     /* ── Entity details validation errors ───────────────────── */
     .entity-errors { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; margin-top: 12px; }
     .entity-errors span { font-size: 12px; color: #991b1b; font-weight: 600; }
+
+    /* ── Persona KYC decision badge & risk level pill ──────── */
+    .kyc-decision-badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; vertical-align: middle; }
+    .badge-green   { background: #dcfce7; color: #166534; }
+    .badge-review  { background: #fef3c7; color: #92400e; }
+    .badge-fail    { background: #fee2e2; color: #991b1b; }
+    .kyc-risk-level { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; vertical-align: middle; }
+    .risk-low    { background: #dcfce7; color: #166534; }
+    .risk-medium { background: #fef3c7; color: #92400e; }
+    .risk-high   { background: #fee2e2; color: #991b1b; }
 
     /* ── Sanctions hard-block & PEP warning in Phase 2a ─────── */
     .sanctions-block { margin-top: 16px; }
@@ -1772,9 +1803,16 @@ export class KycOnboardingComponent {
         `UBO ${i + 1}: ${u.fullName}, Shareholding: ${u.shareholding || 'Unknown'}%`
       ).join('\n');
 
+    // Persona returns confidence (0-1) instead of a risk_score; convert for Gate 9 subtotal.
+    const kyc7Risk = p2b.kyc_identity_risk_score
+      ?? (p2b.kyc_identity_confidence != null ? Math.round((1 - p2b.kyc_identity_confidence) * 20) : 0);
+
     const subtotal = (p1.company_registry_risk_score ?? 0) + (p1.director_risk_score ?? 0) +
-                     (p1.ubo_risk_score ?? 0) + (p2a.pep_sanctions_risk_score ?? 0) +
-                     (p2b.kyc_identity_risk_score ?? 0);
+                     (p1.ubo_risk_score ?? 0) + (p2a.pep_sanctions_risk_score ?? 0) + kyc7Risk;
+
+    const kyc7Detail = p2b.kyc_identity_confidence != null
+      ? `decision: ${p2b.kyc_identity_decision || 'N/A'}, confidence: ${Math.round(p2b.kyc_identity_confidence * 100)}%, risk_level: ${p2b.kyc_identity_risk_level || 'N/A'}, equiv_risk_score: ${kyc7Risk}`
+      : `risk: ${kyc7Risk}`;
 
     const message =
       `KYB ONBOARDING REQUEST — PHASE 2C (Gates 8-9)\n\n` +
@@ -1786,7 +1824,7 @@ export class KycOnboardingComponent {
       `Gate 4: ${p1.director_verification_matched ? 'MATCHED' : 'MISMATCH'}. ${p1.director_verification_summary || ''} (risk: ${p1.director_risk_score ?? 0})\n` +
       `Gate 5: ${p1.ubo_identification_declared ? 'DECLARED' : 'MISSING'}. ${p1.ubo_identification_summary || ''} (risk: ${p1.ubo_risk_score ?? 0})\n` +
       `Gate 6: ${p2a.sanctions_match ? 'SANCTIONED' : p2a.pep_identified ? 'PEP HIT' : 'CLEAR'}. ${p2a.pep_sanctions_summary || ''} (risk: ${p2a.pep_sanctions_risk_score ?? 0})\n` +
-      `Gate 7: ${p2b.kyc_identity_verified ? 'VERIFIED' : 'FAILED'}. ${p2b.kyc_identity_summary || ''} (risk: ${p2b.kyc_identity_risk_score ?? 0})\n\n` +
+      `Gate 7 (Persona KYC): ${p2b.kyc_identity_verified ? 'VERIFIED' : 'FAILED'}. ${p2b.kyc_identity_summary || ''} (${kyc7Detail})\n\n` +
       `INSTRUCTIONS — Run ONLY Gates 8 and 9:\n` +
       `Gate 8: Run AML adverse media check for company and all directors/UBOs. ` +
       `Return adverse_media_found (bool), aml_adverse_media_summary (≤80 chars), aml_risk_score (0-20).\n` +
@@ -1892,13 +1930,17 @@ export class KycOnboardingComponent {
   get processorLiabilityScore(): number | null {
     if (!this.kybResult) return null;
     const r = this.kybResult;
+    // Persona returns kyc_identity_confidence (0-1) rather than kyc_identity_risk_score.
+    // Convert: confidence 0.95 → risk ~1; confidence 0.50 → risk ~10.
+    const kycRisk = r.kyc_identity_risk_score
+      ?? (r.kyc_identity_confidence != null ? Math.round((1 - r.kyc_identity_confidence) * 20) : 0);
     const score = Math.min(100, Math.round(
       (r.pep_sanctions_risk_score                         ?? 0) * 1.6 +
       (r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? 0) * 1.4 +
       (r.company_registry_risk_score                      ?? 0) * 0.9 +
       (r.director_risk_score                              ?? 0) * 0.7 +
       (r.ubo_risk_score                                   ?? 0) * 0.7 +
-      (r.kyc_identity_risk_score                          ?? 0) * 0.7
+      kycRisk                                                   * 0.7
     ));
     return score > 0 ? score : null;
   }
@@ -1941,10 +1983,16 @@ export class KycOnboardingComponent {
         detail: r.pep_sanctions_summary || '',
         score: r.pep_sanctions_risk_score ?? null },
       { name: 'Gate 7 — KYC Identity',
-        pass: r.kyc_identity_verified, warning: false,
-        status: r.kyc_identity_verified ? '✓ VERIFIED' : '✗ FAILED',
+        pass: r.kyc_identity_verified && r.kyc_identity_decision !== 'FAIL',
+        warning: r.kyc_identity_decision === 'MANUAL_REVIEW',
+        status: r.kyc_identity_decision === 'GREEN'         ? '✓ VERIFIED — GREEN'
+              : r.kyc_identity_decision === 'MANUAL_REVIEW' ? '⚠ MANUAL REVIEW'
+              : r.kyc_identity_decision === 'FAIL'          ? '✗ FAILED'
+              : r.kyc_identity_verified                     ? '✓ VERIFIED' : '✗ FAILED',
         detail: r.kyc_identity_summary || '',
-        score: r.kyc_identity_risk_score ?? null },
+        score: r.kyc_identity_confidence != null
+          ? Math.round(r.kyc_identity_confidence * 100)
+          : r.kyc_identity_risk_score ?? null },
       { name: 'Gate 8 — AML Adverse Media',
         pass: !r.adverse_media_found,
         warning: r.adverse_media_found && r.aml_adverse_media_risk_level !== 'high',
