@@ -479,7 +479,7 @@ interface ReviewData {
     <div class="decision-header">
       <div class="decision-icon">{{ decisionIcon }}</div>
       <h2 class="decision-title">{{ kybResult.onboarding_decision || 'Verification Result' }}</h2>
-      <div class="risk-score" *ngIf="kybResult.overall_risk_score != null">Risk Score: {{ kybResult.overall_risk_score }}/100</div>
+      <div class="risk-score" *ngIf="computedRiskScore != null">Risk Score: {{ computedRiskScore }}/100</div>
       <div class="entity-meta">{{ reviewData?.companyName || kybResult.entity_name || entityName }}</div>
     </div>
 
@@ -1357,6 +1357,15 @@ export class KycOnboardingComponent {
       return '';
     };
 
+    // Clip value at the first occurrence of a document-structure keyword so that
+    // greedy [^\n]+ matches don't swallow "Company Number 14782356 Date of…" etc.
+    // when the PDF text has no real newlines between fields.
+    const stopTrail = (val: string): string => {
+      if (!val) return val;
+      const i = val.search(/\s+(?:company\s+(?:number|type|name)|registration\s+number|date\s+of\s+(?:inc|birth)|incorporat|registered\s+(?:no|number|office)|no\.?\s*\d|\d{6,}|\btype\b|\bform\b|\bsigned\b|\bdirector\b|shareholder|\bschedule\b)/i);
+      return i > 3 ? val.substring(0, i).trim().replace(/[,.:;\s]+$/, '') : val.trim();
+    };
+
     const coi  = this.slots.find(s => s.id === 'cert_inc')?.extractedText  ?? null;
     const dirR = this.slots.find(s => s.id === 'dir_reg')?.extractedText   ?? null;
     const uboR = this.slots.find(s => s.id === 'ubo_reg')?.extractedText   ?? null;
@@ -1365,11 +1374,11 @@ export class KycOnboardingComponent {
 
     // Company name — prefer entity form input, fall back to COI text
     const companyName = this.entityName ||
-      extract(coi, 80,
-        /company name[:\s]+([^\n,]+)/i,
-        /name of company[:\s]+([^\n,]+)/i,
+      stopTrail(extract(coi, 80,
+        /company name[:\s]+([^\n,]{3,80})/i,
+        /name of company[:\s]+([^\n,]{3,80})/i,
         /^([A-Z][A-Z\s&().',-]{3,60}(?:LIMITED|LTD|PLC|LLP))/m
-      );
+      ));
 
     const regNum = extract(coi, 12,
       /company number[:\s#]*([0-9]{6,8})/i,
@@ -1378,50 +1387,51 @@ export class KycOnboardingComponent {
       /no\.?\s*([0-9]{6,8})/i
     );
 
-    const incDate = extract(coi, 40,
-      /incorporated on[:\s]+([^\n]+)/i,
-      /date of incorporation[:\s]+([^\n]+)/i,
-      /incorporated[:\s]+([0-9]{1,2}[^\n]{3,20}[0-9]{4})/i
-    );
+    // Match a specific date format so we don't spill into surrounding fields
+    const incDate = stopTrail(extract(coi, 40,
+      /(?:incorporated on|date of incorporation)[:\s]+(\d{1,2}\s+\w{3,9}\s+\d{4})/i,
+      /(?:incorporated on|date of incorporation)[:\s]+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      /incorporated[:\s]+([0-9]{1,2}[^\n,]{3,18}[0-9]{4})/i
+    ));
 
-    const regAddr = extract(coi, 120,
-      /registered office[:\s]+([^\n]+)/i,
-      /registered address[:\s]+([^\n]+)/i
+    // Stop at period (next sentence) or document-structure keywords for address
+    const regAddr = stopTrail(extract(coi, 120,
+      /registered (?:office|address)[:\s]+([^.\n]{10,120})/i
     ) || extract(paR, 120,
-      /address[:\s]+([^\n]+)/i
-    );
+      /address[:\s]+([^.\n]{10,120})/i
+    ));
 
     // Director name from Register of Directors
     const dirName = extract(dirR, 60,
       /director[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
       /name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
-      /full name[:\s]+([^\n]+)/i
+      /full name[:\s]+([^\n]{3,60})/i
     );
-    const dirDob = extract(dirR, 30,
-      /date of birth[:\s]+([^\n]+)/i,
-      /d\.?o\.?b\.?[:\s]+([^\n]+)/i
-    );
-    const dirNat = extract(dirR, 30,
-      /nationality[:\s]+([^\n]+)/i,
-      /country[:\s]+([^\n]+)/i
-    );
+    const dirDob = stopTrail(extract(dirR, 30,
+      /date of birth[:\s]+(\d{1,2}\s+\w{3,9}\s+\d{4})/i,
+      /d\.?o\.?b\.?[:\s]+([^\n,]{3,25})/i
+    ));
+    const dirNat = stopTrail(extract(dirR, 30,
+      /nationality[:\s]+([^\n,]{3,25})/i,
+      /country[:\s]+([^\n,]{3,25})/i
+    ));
 
     // UBO name, shareholding and nationality from UBO register
     const uboName = extract(uboR, 60,
       /beneficial owner[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
       /name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
-      /full name[:\s]+([^\n]+)/i
+      /full name[:\s]+([^\n]{3,60})/i
     );
     const uboShare = extract(uboR, 6,
       /([0-9]+(?:\.[0-9]+)?)\s*%/,
       /shareholding[:\s]+([0-9]+)/i,
       /shares[:\s]+([0-9]+)/i
     );
-    const uboNat = extract(uboR, 30,
-      /nationality[:\s]+([^\n,]+)/i,
-      /citizenship[:\s]+([^\n,]+)/i,
-      /country of residence[:\s]+([^\n,]+)/i
-    );
+    const uboNat = stopTrail(extract(uboR, 30,
+      /nationality[:\s]+([^\n,]{3,25})/i,
+      /citizenship[:\s]+([^\n,]{3,25})/i,
+      /country of residence[:\s]+([^\n,]{3,25})/i
+    ));
 
     // Director document number from the Director ID Document slot (passport/licence scan)
     const dirIdText = this.slots.find(s => s.id === 'dir_id')?.extractedText ?? null;
@@ -1434,10 +1444,10 @@ export class KycOnboardingComponent {
       /no\.?\s+([A-Z]{2}[0-9]{6,8}[A-Z]?)/i
     );
 
-    const sof = extract(sofD, 100,
-      /source of funds[:\s]+([^\n]+)/i,
-      /funds derived from[:\s]+([^\n]+)/i
-    );
+    const sof = stopTrail(extract(sofD, 100,
+      /source of funds[:\s]+([^\n]{3,100})/i,
+      /funds derived from[:\s]+([^\n]{3,100})/i
+    ));
 
     console.log('[buildReviewData] extracted:', { companyName, regNum, incDate, regAddr, dirName, dirDob, dirNat, idNumber, uboName, uboShare, uboNat, sof });
 
@@ -1705,12 +1715,19 @@ export class KycOnboardingComponent {
   get gateResults(): any[] {
     if (!this.kybResult) return [];
     const r = this.kybResult;
+    // Gate 1 is evaluated entirely client-side — the orchestrator never scores it.
+    // Use allPassed (local truth) and derive score from avg slot confidence.
+    const checkedSlots = this.slots.filter(s => s.result);
+    const gate1Score = checkedSlots.length
+      ? Math.round(checkedSlots.reduce((sum, s) => sum + s.result!.confidence_score * 100, 0) / checkedSlots.length)
+      : null;
     return [
       { name: 'Gate 1 — Document Quality Check',
-        pass: r.document_quality_passed, warning: false,
-        status: r.document_quality_passed ? '✓ PASS' : '✗ FAIL',
-        detail: r.document_quality_summary || '',
-        score: r.document_quality_risk_score ?? null },
+        pass: this.allPassed,
+        warning: !this.allPassed && this.reviewCount > 0,
+        status: this.allPassed ? '✓ PASS' : '✗ FAIL',
+        detail: `${this.passCount}/${this.slots.length} documents passed quality pre-screen`,
+        score: gate1Score },
       { name: 'Gate 3 — Company Registry',
         pass: r.company_registry_verified, warning: false,
         status: r.company_registry_verified ? '✓ ACTIVE' : '✗ ' + (r.company_registry_status || 'FAILED'),
@@ -1744,6 +1761,23 @@ export class KycOnboardingComponent {
         detail: r.aml_adverse_media_summary || '',
         score: r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? null }
     ];
+  }
+
+  // When the LLM returns 0 or omits overall_risk_score, compute it from gate scores.
+  get computedRiskScore(): number | null {
+    if (!this.kybResult) return null;
+    const r = this.kybResult;
+    if (r.overall_risk_score && r.overall_risk_score > 0) return r.overall_risk_score;
+    const parts = [
+      r.company_registry_risk_score,
+      r.director_risk_score,
+      r.ubo_risk_score,
+      r.pep_sanctions_risk_score,
+      r.kyc_identity_risk_score,
+      r.aml_risk_score ?? r.aml_adverse_media_risk_score
+    ].filter((s): s is number => typeof s === 'number' && s > 0);
+    if (!parts.length) return null;
+    return Math.min(100, parts.reduce((a, b) => a + b, 0));
   }
 
   // ── Computed ───────────────────────────────────────────────────────────────
