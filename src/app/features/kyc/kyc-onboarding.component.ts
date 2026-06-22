@@ -592,16 +592,33 @@ interface ReviewData {
       <!-- Right: validation check list -->
       <div class="result-checks-col">
         <h3 class="result-section-title">Validation Checks</h3>
-        <div *ngFor="let gate of gateResults" class="vc-row"
-             [class.vc-pass]="gate.pass" [class.vc-warn]="!gate.pass && gate.warning" [class.vc-fail]="!gate.pass && !gate.warning">
-          <div class="vc-icon">{{ gate.pass ? '✓' : gate.warning ? '⚠' : '✗' }}</div>
-          <div class="vc-body">
-            <div class="vc-name">{{ gate.name }}</div>
-            <div class="vc-status">{{ gate.status }}</div>
-            <div class="vc-detail" *ngIf="gate.detail">{{ gate.detail }}</div>
+        <ng-container *ngFor="let gate of gateResults">
+          <div class="vc-row"
+               [class.vc-pass]="gate.pass" [class.vc-warn]="!gate.pass && gate.warning" [class.vc-fail]="!gate.pass && !gate.warning">
+            <div class="vc-icon">{{ gate.pass ? '✓' : gate.warning ? '⚠' : '✗' }}</div>
+            <div class="vc-body">
+              <div class="vc-name">{{ gate.name }}</div>
+              <div class="vc-status">{{ gate.status }}</div>
+              <div class="vc-detail" *ngIf="gate.detail">{{ gate.detail }}</div>
+            </div>
+            <div class="vc-score" *ngIf="gate.score != null">{{ gate.score }}/100</div>
           </div>
-          <div class="vc-score" *ngIf="gate.score != null">{{ gate.score }}/100</div>
-        </div>
+          <!-- AML findings — shown inline under Gate 8 when flagged -->
+          <div *ngIf="gate.group === 'aml' && kybResult?.aml_findings?.length" class="aml-findings">
+            <div class="aml-findings-header">Adverse Media Sources</div>
+            <div *ngFor="let f of kybResult.aml_findings" class="aml-finding">
+              <div class="aml-finding-top">
+                <span class="aml-cat" [class.cat-criminal]="f.category==='criminal'" [class.cat-regulatory]="f.category==='regulatory'" [class.cat-fraud]="f.category==='fraud'">{{ f.category }}</span>
+                <span class="aml-title">{{ f.title }}</span>
+              </div>
+              <div class="aml-finding-meta">
+                <span *ngIf="f.source" class="aml-source">{{ f.source }}</span>
+                <span *ngIf="f.date" class="aml-date">{{ f.date }}</span>
+              </div>
+              <div *ngIf="f.url" class="aml-url">{{ f.url }}</div>
+            </div>
+          </div>
+        </ng-container>
 
         <div *ngIf="kybResult.key_findings?.length" style="margin-top:16px">
           <div class="result-section-title" style="margin-bottom:8px">Key Findings</div>
@@ -617,33 +634,47 @@ interface ReviewData {
       </div>
     </div>
 
-    <!-- Score breakdown — per-gate risk + processor liability -->
+    <!-- Score breakdown — grouped by pipeline phase -->
     <div class="score-breakdown-section">
       <h3 class="result-section-title" style="margin-bottom:12px">Risk Score Breakdown</h3>
-      <div class="score-grid">
-        <ng-container *ngFor="let gate of gateResults">
-          <div class="score-item" *ngIf="gate.score != null"
-               [class.si-pass]="gate.pass" [class.si-warn]="!gate.pass && gate.warning" [class.si-fail]="!gate.pass && !gate.warning">
-            <div class="si-name">{{ gate.name }}</div>
-            <div class="si-bar-track">
-              <div class="si-bar" [style.width]="gate.score + '%'"></div>
-            </div>
-            <div class="si-val">{{ gate.score }}<span class="si-denom">/100</span></div>
+
+      <ng-container *ngFor="let group of [
+        { label: 'Gates 1–2 — Document Checks',      gates: docGates },
+        { label: 'Gates 3–5 — Registry & Ownership', gates: registryGates },
+        { label: 'Gate 6 — PEP & Sanctions',          gates: pepGates },
+        { label: 'Gate 7 — KYC Identity',             gates: kycGates },
+        { label: 'Gate 8 — AML Adverse Media',        gates: amlGates }
+      ]">
+        <div class="score-group" *ngIf="group.gates.length">
+          <div class="score-group-label">{{ group.label }}</div>
+          <div class="score-grid">
+            <ng-container *ngFor="let gate of group.gates">
+              <div class="score-item" *ngIf="gate.score != null"
+                   [class.si-pass]="gate.pass" [class.si-warn]="!gate.pass && gate.warning" [class.si-fail]="!gate.pass && !gate.warning">
+                <div class="si-name">{{ gate.name }}</div>
+                <div class="si-bar-track">
+                  <div class="si-bar" [style.width]="gate.score + '%'"></div>
+                </div>
+                <div class="si-val">{{ gate.score }}<span class="si-denom">/100</span></div>
+              </div>
+            </ng-container>
           </div>
-        </ng-container>
-        <div class="score-item si-total" *ngIf="computedRiskScore != null">
-          <div class="si-name">Total Risk Score</div>
-          <div class="si-bar-track">
-            <div class="si-bar" [style.width]="computedRiskScore + '%'"></div>
-          </div>
-          <div class="si-val">{{ computedRiskScore }}<span class="si-denom">/100</span></div>
         </div>
-        <div class="score-item si-liability" *ngIf="processorLiabilityScore != null">
-          <div class="si-name">Processor Liability Score</div>
-          <div class="si-bar-track">
-            <div class="si-bar" [style.width]="processorLiabilityScore + '%'"></div>
+      </ng-container>
+
+      <div class="score-group">
+        <div class="score-group-label">Risk Scoring Summary</div>
+        <div class="score-grid">
+          <div class="score-item si-total" *ngIf="computedRiskScore != null">
+            <div class="si-name">Total Risk Score</div>
+            <div class="si-bar-track"><div class="si-bar" [style.width]="computedRiskScore + '%'"></div></div>
+            <div class="si-val">{{ computedRiskScore }}<span class="si-denom">/100</span></div>
           </div>
-          <div class="si-val">{{ processorLiabilityScore }}<span class="si-denom">/100</span></div>
+          <div class="score-item si-liability" *ngIf="processorLiabilityScore != null">
+            <div class="si-name">Processor Liability Score</div>
+            <div class="si-bar-track"><div class="si-bar" [style.width]="processorLiabilityScore + '%'"></div></div>
+            <div class="si-val">{{ processorLiabilityScore }}<span class="si-denom">/100</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1054,9 +1085,26 @@ interface ReviewData {
     .sanctions-alert span { font-weight: 400; display: block; margin-top: 4px; }
     .pep-warning-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px 14px; color: #92400e; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
 
+    /* ── AML findings list (inline under Gate 8) ────────────── */
+    .aml-findings { margin: 2px 0 6px 32px; padding: 10px 12px; background: #fef9f0; border: 1px solid #fcd34d; border-radius: 6px; }
+    .aml-findings-header { font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .aml-finding { padding: 6px 0; border-bottom: 1px solid #fde68a; }
+    .aml-finding:last-child { border-bottom: none; padding-bottom: 0; }
+    .aml-finding-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+    .aml-title { font-size: 12px; color: #1e3a5f; font-weight: 600; line-height: 1.3; }
+    .aml-cat { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; background: #fee2e2; color: #991b1b; }
+    .cat-criminal { background: #fee2e2; color: #991b1b; }
+    .cat-regulatory { background: #fef3c7; color: #92400e; }
+    .cat-fraud { background: #fce7f3; color: #9d174d; }
+    .aml-finding-meta { display: flex; gap: 12px; font-size: 11px; color: #64748b; margin-bottom: 2px; }
+    .aml-source { font-weight: 600; }
+    .aml-url { font-size: 10px; color: #64748b; word-break: break-all; font-family: monospace; }
+
     /* ── Score breakdown section ─────────────────────────────── */
     .score-breakdown-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
-    .score-grid { display: flex; flex-direction: column; gap: 8px; }
+    .score-group { margin-bottom: 14px; }
+    .score-group-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; padding-left: 2px; }
+    .score-grid { display: flex; flex-direction: column; gap: 6px; }
     .score-item { display: grid; grid-template-columns: 220px 1fr 52px; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; background: #f8fafc; }
     .si-name { font-size: 12px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .si-bar-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
@@ -1827,7 +1875,11 @@ export class KycOnboardingComponent {
       `Gate 7 (Persona KYC): ${p2b.kyc_identity_verified ? 'VERIFIED' : 'FAILED'}. ${p2b.kyc_identity_summary || ''} (${kyc7Detail})\n\n` +
       `INSTRUCTIONS — Run ONLY Gates 8 and 9:\n` +
       `Gate 8: Run AML adverse media check for company and all directors/UBOs. ` +
-      `Return adverse_media_found (bool), aml_adverse_media_summary (≤80 chars), aml_risk_score (0-20).\n` +
+      `Return adverse_media_found (bool), aml_adverse_media_summary (≤80 chars), aml_risk_score (0-20). ` +
+      `If adverse_media_found is true also return aml_findings array — each item: ` +
+      `{ "title": "headline ≤100 chars", "source": "publication name", "date": "YYYY-MM-DD or year", ` +
+      `"url": "URL if known or empty string", "category": "criminal|regulatory|fraud|reputational|other" }. ` +
+      `Limit to 5 most significant findings.\n` +
       `Gate 9: Sum all gate scores — subtotal from Gates 3-7: ${subtotal}. ` +
       `Add Gate 8 score for overall_risk_score (integer 0-100). ` +
       `Decision: APPROVED (≤30), MANUAL_REVIEW (31-60), REJECTED (>60). ` +
@@ -1960,28 +2012,33 @@ export class KycOnboardingComponent {
         warning: !this.allPassed && this.reviewCount > 0,
         status: this.allPassed ? '✓ PASS' : '✗ FAIL',
         detail: `${this.passCount}/${this.slots.length} documents passed quality pre-screen`,
-        score: gate1Score },
+        score: gate1Score, group: 'docs' },
+      { name: 'Gate 2 — Data Extraction & Review',
+        pass: true, warning: false,
+        status: '✓ CONFIRMED',
+        detail: `${this.reviewData?.companyName || 'Entity'} details reviewed and confirmed by applicant`,
+        score: null, group: 'docs' },
       { name: 'Gate 3 — Company Registry',
         pass: r.company_registry_verified, warning: false,
         status: r.company_registry_verified ? '✓ ACTIVE' : '✗ ' + (r.company_registry_status || 'FAILED'),
         detail: r.company_registry_summary || '',
-        score: r.company_registry_risk_score ?? null },
+        score: r.company_registry_risk_score ?? null, group: 'registry' },
       { name: 'Gate 4 — Director Verification',
         pass: r.director_verification_matched, warning: !r.director_verification_matched,
         status: r.director_verification_matched ? '✓ MATCHED' : '⚠ MISMATCH',
         detail: r.director_verification_summary || '',
-        score: r.director_risk_score ?? null },
+        score: r.director_risk_score ?? null, group: 'registry' },
       { name: 'Gate 5 — UBO Identification',
         pass: r.ubo_identification_declared, warning: !r.ubo_identification_declared,
         status: r.ubo_identification_declared ? '✓ DECLARED' : '⚠ MISSING',
         detail: r.ubo_identification_summary || '',
-        score: r.ubo_risk_score ?? null },
+        score: r.ubo_risk_score ?? null, group: 'registry' },
       { name: 'Gate 6 — PEP / Sanctions',
         pass: !r.sanctions_match && !r.pep_identified,
         warning: r.pep_identified && !r.sanctions_match,
         status: r.sanctions_match ? '✗ SANCTIONED' : r.pep_identified ? '⚠ PEP IDENTIFIED' : '✓ CLEAR',
         detail: r.pep_sanctions_summary || '',
-        score: r.pep_sanctions_risk_score ?? null },
+        score: r.pep_sanctions_risk_score ?? null, group: 'pep' },
       { name: 'Gate 7 — KYC Identity',
         pass: r.kyc_identity_verified && r.kyc_identity_decision !== 'FAIL',
         warning: r.kyc_identity_decision === 'MANUAL_REVIEW',
@@ -1992,15 +2049,21 @@ export class KycOnboardingComponent {
         detail: r.kyc_identity_summary || '',
         score: r.kyc_identity_confidence != null
           ? this.confPct(r.kyc_identity_confidence)
-          : r.kyc_identity_risk_score ?? null },
+          : r.kyc_identity_risk_score ?? null, group: 'kyc' },
       { name: 'Gate 8 — AML Adverse Media',
         pass: !r.adverse_media_found,
         warning: r.adverse_media_found && r.aml_adverse_media_risk_level !== 'high',
         status: r.adverse_media_found ? '⚠ FLAGGED' : '✓ CLEAR',
         detail: r.aml_adverse_media_summary || '',
-        score: r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? null }
+        score: r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? null, group: 'aml' }
     ];
   }
+
+  get docGates()      { return this.gateResults.filter(g => g.group === 'docs'); }
+  get registryGates() { return this.gateResults.filter(g => g.group === 'registry'); }
+  get pepGates()      { return this.gateResults.filter(g => g.group === 'pep'); }
+  get kycGates()      { return this.gateResults.filter(g => g.group === 'kyc'); }
+  get amlGates()      { return this.gateResults.filter(g => g.group === 'aml'); }
 
   // Normalise Persona confidence to 0–1 regardless of whether it was sent as 0.95 or 95.
   private normConf(v: number | null | undefined): number {
