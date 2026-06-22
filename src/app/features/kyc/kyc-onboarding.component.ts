@@ -37,21 +37,8 @@ interface ReviewData {
   <div class="left-col">
   <!-- Header -->
   <div class="page-header">
-    <div class="header-top">
-      <div>
-        <h1>KYC / KYB Onboarding</h1>
-        <p class="subtitle">Institutional client due diligence — document submission & quality pre-screen</p>
-      </div>
-      <div class="stage-pill">Stage 1 of 9</div>
-    </div>
-    <!-- Stage progress -->
-    <div class="stage-bar">
-      <div *ngFor="let s of stages; let i = index"
-           class="stage-step" [class.active]="i === 0" [class.done]="i < 0">
-        <div class="step-dot">{{ i + 1 }}</div>
-        <span class="step-label">{{ s }}</span>
-      </div>
-    </div>
+    <h1>KYC / KYB Onboarding</h1>
+    <p class="subtitle">Institutional client due diligence — document submission &amp; quality pre-screen</p>
   </div>
 
   <!-- Company info -->
@@ -216,7 +203,9 @@ interface ReviewData {
     <div class="summary-message pass-msg" *ngIf="allPassed">
       ✓ All {{ passCount }} documents scanned successfully — data extracted and ready for verification.
     </div>
-    <button class="btn-primary" *ngIf="allPassed" style="margin-top:16px" (click)="submitKYB()">
+    <button class="btn-primary"
+            *ngIf="allPassed && !showReview && !kybPhase1Loading && !showPhase1Review && !kybPhase2aLoading && !showPhase2aReview && !kybLoading && !kybResult"
+            style="margin-top:16px" (click)="submitKYB()">
       {{ gateActionLabel }}
     </button>
   </div>
@@ -701,18 +690,8 @@ interface ReviewData {
       .left-col { height: auto; overflow-y: visible; }
       .gate-tracker { height: auto !important; overflow-y: visible !important; }
     }
-    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
     h1 { font-size: 22px; font-weight: 700; color: #1e3a5f; margin: 0 0 4px; }
     .subtitle { color: #64748b; font-size: 13px; margin: 0; }
-    .stage-pill { background: #1e3a5f; color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-
-    .stage-bar { display: flex; gap: 4px; overflow-x: auto; padding-top: 8px; }
-    .stage-step { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 60px; opacity: 0.35; }
-    .stage-step.active { opacity: 1; }
-    .step-dot { width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-    .stage-step.active .step-dot { background: #1e3a5f; color: white; }
-    .step-label { font-size: 9px; color: #64748b; text-align: center; line-height: 1.2; }
-    .stage-step.active .step-label { color: #1e3a5f; font-weight: 600; }
 
     .section-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
     .section-title { font-size: 16px; font-weight: 600; color: #1e3a5f; margin: 0 0 16px; }
@@ -960,11 +939,6 @@ export class KycOnboardingComponent {
   entityName   = '';
   jurisdiction = '';
   entityType   = '';
-
-  readonly stages = [
-    'Documents', 'Quality', 'Extraction', 'Registry',
-    'Identity', 'Sanctions', 'AML', 'Risk', 'Decision'
-  ];
 
   readonly checkKeys: Array<keyof DocQualityResult['checks']> = [
     'readable', 'genuine', 'complete', 'current', 'is_original'
@@ -1346,14 +1320,19 @@ export class KycOnboardingComponent {
 
   submitKYB(): void {
     this.entityErrors = [];
-    // Auto-populate top fields from COI PDF text if the user left them blank
+    // Auto-populate entityName from COI PDF text if the user left it blank
     if (!this.entityName.trim()) {
       const coi = this.slots.find(s => s.id === 'cert_inc')?.extractedText ?? null;
       if (coi) {
-        const m = coi.match(/company name[:\s]+([^\n,]{3,80})/i)
-               ?? coi.match(/name of company[:\s]+([^\n,]{3,80})/i)
+        // Stop before "Company Number", "Registered", date tokens, or newline
+        const stopRe = /\s*(?:company number|registration number|registered|incorporated|dated?|no\.?\s*\d|\d{4}|,|\n).*/i;
+        const m = coi.match(/company name[:\s]+([^\n]{3,80})/i)
+               ?? coi.match(/name of company[:\s]+([^\n]{3,80})/i)
                ?? coi.match(/^([A-Z][A-Z\s&().',-]{3,60}(?:LIMITED|LTD|PLC|LLP))/m);
-        if (m?.[1]) this.entityName = m[1].trim().replace(/\s{2,}/g, ' ').substring(0, 80);
+        if (m?.[1]) {
+          const raw = m[1].trim().replace(/\s{2,}/g, ' ');
+          this.entityName = raw.replace(stopRe, '').trim().substring(0, 80);
+        }
       }
     }
     if (!this.jurisdiction.trim()) this.jurisdiction = 'England & Wales';
