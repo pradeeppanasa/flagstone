@@ -510,7 +510,7 @@ interface ReviewData {
           </div>
         </div>
         <div class="p1-score" *ngIf="kybPhase2bResult.kyc_identity_confidence != null">
-          {{ (kybPhase2bResult.kyc_identity_confidence * 100).toFixed(0) }}%<br>
+          {{ confPct(kybPhase2bResult.kyc_identity_confidence) }}%<br>
           <span style="font-size:9px;font-weight:400;color:#64748b">confidence</span>
         </div>
       </div>
@@ -1803,15 +1803,15 @@ export class KycOnboardingComponent {
         `UBO ${i + 1}: ${u.fullName}, Shareholding: ${u.shareholding || 'Unknown'}%`
       ).join('\n');
 
-    // Persona returns confidence (0-1) instead of a risk_score; convert for Gate 9 subtotal.
+    // Persona returns confidence (0-1 or 0-100); normalise before converting to risk score.
     const kyc7Risk = p2b.kyc_identity_risk_score
-      ?? (p2b.kyc_identity_confidence != null ? Math.round((1 - p2b.kyc_identity_confidence) * 20) : 0);
+      ?? Math.round((1 - this.normConf(p2b.kyc_identity_confidence)) * 20);
 
     const subtotal = (p1.company_registry_risk_score ?? 0) + (p1.director_risk_score ?? 0) +
                      (p1.ubo_risk_score ?? 0) + (p2a.pep_sanctions_risk_score ?? 0) + kyc7Risk;
 
     const kyc7Detail = p2b.kyc_identity_confidence != null
-      ? `decision: ${p2b.kyc_identity_decision || 'N/A'}, confidence: ${Math.round(p2b.kyc_identity_confidence * 100)}%, risk_level: ${p2b.kyc_identity_risk_level || 'N/A'}, equiv_risk_score: ${kyc7Risk}`
+      ? `decision: ${p2b.kyc_identity_decision || 'N/A'}, confidence: ${this.confPct(p2b.kyc_identity_confidence)}%, risk_level: ${p2b.kyc_identity_risk_level || 'N/A'}, equiv_risk_score: ${kyc7Risk}`
       : `risk: ${kyc7Risk}`;
 
     const message =
@@ -1930,10 +1930,10 @@ export class KycOnboardingComponent {
   get processorLiabilityScore(): number | null {
     if (!this.kybResult) return null;
     const r = this.kybResult;
-    // Persona returns kyc_identity_confidence (0-1) rather than kyc_identity_risk_score.
-    // Convert: confidence 0.95 → risk ~1; confidence 0.50 → risk ~10.
+    // Persona returns kyc_identity_confidence (0-1 or 0-100) not a risk score.
+    // Convert normalised confidence: 0.95 → risk ~1; 0.50 → risk ~10.
     const kycRisk = r.kyc_identity_risk_score
-      ?? (r.kyc_identity_confidence != null ? Math.round((1 - r.kyc_identity_confidence) * 20) : 0);
+      ?? Math.round((1 - this.normConf(r.kyc_identity_confidence)) * 20);
     const score = Math.min(100, Math.round(
       (r.pep_sanctions_risk_score                         ?? 0) * 1.6 +
       (r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? 0) * 1.4 +
@@ -1991,7 +1991,7 @@ export class KycOnboardingComponent {
               : r.kyc_identity_verified                     ? '✓ VERIFIED' : '✗ FAILED',
         detail: r.kyc_identity_summary || '',
         score: r.kyc_identity_confidence != null
-          ? Math.round(r.kyc_identity_confidence * 100)
+          ? this.confPct(r.kyc_identity_confidence)
           : r.kyc_identity_risk_score ?? null },
       { name: 'Gate 8 — AML Adverse Media',
         pass: !r.adverse_media_found,
@@ -2002,11 +2002,23 @@ export class KycOnboardingComponent {
     ];
   }
 
+  // Normalise Persona confidence to 0–1 regardless of whether it was sent as 0.95 or 95.
+  private normConf(v: number | null | undefined): number {
+    if (v == null) return 0;
+    return v > 1 ? v / 100 : v;
+  }
+  // Confidence as a 0–100 integer for display / score bars.
+  confPct(v: number | null | undefined): number | null {
+    if (v == null) return null;
+    return Math.round(this.normConf(v) * 100);
+  }
+
   // When the LLM returns 0 or omits overall_risk_score, compute it from gate scores.
   get computedRiskScore(): number | null {
     if (!this.kybResult) return null;
     const r = this.kybResult;
-    if (r.overall_risk_score && r.overall_risk_score > 0) return r.overall_risk_score;
+    // Cap in case the LLM returns > 100
+    if (r.overall_risk_score && r.overall_risk_score > 0) return Math.min(100, r.overall_risk_score);
     const parts = [
       r.company_registry_risk_score,
       r.director_risk_score,
