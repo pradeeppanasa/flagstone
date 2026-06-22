@@ -1734,14 +1734,8 @@ export class KycOnboardingComponent {
       `Gate 5: ${p1.ubo_identification_declared ? 'DECLARED' : 'MISSING'}. ${p1.ubo_identification_summary || ''}\n` +
       `Gate 6: ${p2a.sanctions_match ? 'SANCTIONED' : p2a.pep_identified ? 'PEP HIT' : 'CLEAR'}. ${p2a.pep_sanctions_summary || ''}\n\n` +
       `INSTRUCTIONS — Run ONLY Gate 7. STOP after Gate 7.\n` +
-      `Gate 7: Assess KYC identity for the primary director listed above.\n` +
-      `IMPORTANT: Do NOT call create_verification_session, get_verification_session, or any external Stripe/identity API. ` +
-      `Do NOT invoke any tool. Perform a document-based assessment only, using the director name, DOB, nationality, ` +
-      `and ID document number already provided in this request.\n` +
-      `Assessment criteria: (1) ID document number is present and well-formed, (2) director name matches across ` +
-      `company docs, (3) nationality and DOB are consistent. If all three pass, set kyc_identity_verified: true.\n` +
-      `Return ONLY a JSON object — no explanation text, no markdown, no code fences:\n` +
-      `{"kyc_identity_verified": bool, "kyc_identity_summary": "≤80 chars", "kyc_identity_risk_score": 0-20}`;
+      `Gate 7: Run KYC identity verification for the primary director.\n` +
+      `Return JSON: kyc_identity_verified (bool), kyc_identity_summary (string ≤80 chars), kyc_identity_risk_score (0-20).`;
 
     this.lyzr.callAgentKyb(environment.agents['kybOrchestrator'], message, `kyb-p2b-${Date.now()}`).subscribe({
       next: (res) => {
@@ -1794,10 +1788,7 @@ export class KycOnboardingComponent {
       `Gate 6: ${p2a.sanctions_match ? 'SANCTIONED' : p2a.pep_identified ? 'PEP HIT' : 'CLEAR'}. ${p2a.pep_sanctions_summary || ''} (risk: ${p2a.pep_sanctions_risk_score ?? 0})\n` +
       `Gate 7: ${p2b.kyc_identity_verified ? 'VERIFIED' : 'FAILED'}. ${p2b.kyc_identity_summary || ''} (risk: ${p2b.kyc_identity_risk_score ?? 0})\n\n` +
       `INSTRUCTIONS — Run ONLY Gates 8 and 9:\n` +
-      `Gate 8: Perform AML adverse media assessment for the company and all directors/UBOs named above. ` +
-      `IMPORTANT: Do NOT call any external API, search tool, or web scraping tool. ` +
-      `Base your assessment on the entity type, jurisdiction, industry context, and names provided. ` +
-      `Use your knowledge to determine if there are known AML/fraud/enforcement concerns for these parties. ` +
+      `Gate 8: Run AML adverse media check for company and all directors/UBOs. ` +
       `Return adverse_media_found (bool), aml_adverse_media_summary (≤80 chars), aml_risk_score (0-20).\n` +
       `Gate 9: Sum all gate scores — subtotal from Gates 3-7: ${subtotal}. ` +
       `Add Gate 8 score for overall_risk_score (integer 0-100). ` +
