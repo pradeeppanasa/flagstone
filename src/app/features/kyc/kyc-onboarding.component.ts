@@ -203,15 +203,10 @@ interface ReviewData {
     <div class="summary-message pass-msg" *ngIf="allPassed">
       ✓ All {{ passCount }} documents scanned successfully — data extracted and ready for verification.
     </div>
-    <button class="btn-primary"
-            *ngIf="allPassed && !showReview && !kybPhase1Loading && !showPhase1Review && !kybPhase2aLoading && !showPhase2aReview && !kybPhase2bLoading && !showPhase2bReview && !kybLoading && !kybResult"
-            style="margin-top:16px" (click)="submitKYB()">
-      {{ gateActionLabel }}
-    </button>
   </div>
 
   <!-- Submit card — all docs passed, ready to run full KYB -->
-  <div class="section-card submit-card" *ngIf="allPassed && !kybResult && !kybLoading && !kybPhase1Loading && !kybPhase2aLoading && !kybError && !showReview && !showPhase1Review && !showPhase2aReview">
+  <div class="section-card submit-card" *ngIf="allPassed && !kybResult && !kybLoading && !kybPhase1Loading && !kybPhase2aLoading && !kybPhase2bLoading && !kybError && !showReview && !showPhase1Review && !showPhase2aReview && !showPhase2bReview">
     <h2 class="section-title">Ready for Full KYB Verification</h2>
     <p class="section-note">All documents passed. The system will now run the complete verification pipeline:</p>
     <ul class="process-list">
@@ -1690,7 +1685,13 @@ export class KycOnboardingComponent {
       `Gate 4: ${p1.director_verification_matched ? 'MATCHED' : 'MISMATCH'}. ${p1.director_verification_summary || ''}\n` +
       `Gate 5: ${p1.ubo_identification_declared ? 'DECLARED' : 'MISSING'}. ${p1.ubo_identification_summary || ''}\n\n` +
       `INSTRUCTIONS — Run ONLY Gate 6. STOP after Gate 6.\n` +
-      `Gate 6: Run PEP and sanctions screening (OFAC, UN, EU, HMT) for all directors and UBOs listed above.\n` +
+      `Gate 6: Run PEP and sanctions screening (OFAC, UN, EU, HMT lists) for all directors and UBOs.\n` +
+      `CRITICAL RULE — sanctions_match: Only set to true if you have DEFINITIVE, HIGH-CONFIDENCE evidence ` +
+      `that the EXACT named individual or company appears on an official sanctions list (OFAC SDN, UN Consolidated, ` +
+      `EU Consolidated, UK HMT). Common names with no known sanctions record MUST return sanctions_match: false. ` +
+      `When in doubt, return sanctions_match: false. A false positive blocks a legitimate client permanently.\n` +
+      `pep_identified: Only true for known heads of state, senior government ministers, senior military/judiciary, ` +
+      `or immediate family of such persons. Corporate directors with no known political role must return pep_identified: false.\n` +
       `Return JSON: sanctions_match (bool), pep_identified (bool), ` +
       `pep_sanctions_summary (string ≤80 chars), pep_sanctions_risk_score (0-25).`;
 
