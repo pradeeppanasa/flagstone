@@ -351,8 +351,8 @@ interface ReviewData {
   <div class="section-card" *ngIf="kybPhase1Loading">
     <div style="text-align:center;padding:32px 20px 16px">
       <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 16px"></div>
-      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running KYB Verification — Phase 1</h2>
-      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Checking Companies House registry, directors and beneficial owners…</p>
+      <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running KYB Verification — Phase 1</h2>
+      <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Checking Companies House registry, directors and beneficial owners…</p>
     </div>
     <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
       <div class="gate-progress-row">⏳ Gate 3 — Validating Companies House registry</div>
@@ -406,8 +406,8 @@ interface ReviewData {
   <div class="section-card" *ngIf="kybPhase2aLoading">
     <div style="text-align:center;padding:32px 20px 16px">
       <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 16px"></div>
-      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running Gate 6 — PEP &amp; Sanctions</h2>
-      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Screening all directors and UBOs against OFAC, UN, EU and HMT sanctions lists…</p>
+      <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running Gate 6 — PEP &amp; Sanctions</h2>
+      <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Screening all directors and UBOs against OFAC, UN, EU and HMT sanctions lists…</p>
     </div>
     <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
       <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
@@ -464,8 +464,8 @@ interface ReviewData {
   <div class="section-card" *ngIf="kybPhase2bLoading">
     <div style="text-align:center;padding:32px 20px 16px">
       <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 16px"></div>
-      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running Gate 7 — KYC Identity Check</h2>
-      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Verifying director identity documents…</p>
+      <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running Gate 7 — KYC Identity Check</h2>
+      <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Verifying director identity documents…</p>
     </div>
     <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
       <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
@@ -526,8 +526,8 @@ interface ReviewData {
   <div class="section-card" *ngIf="kybLoading">
     <div style="text-align:center;padding:32px 20px 16px">
       <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 16px"></div>
-      <h2 style="color:#1e3a5f;margin:0 0 6px;font-size:18px">Running Gates 8–9 — AML &amp; Risk Scoring</h2>
-      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Adverse media check and final risk scoring in progress…</p>
+      <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running Gates 8–9 — AML &amp; Risk Scoring</h2>
+      <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Adverse media check and final risk scoring in progress…</p>
     </div>
     <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
       <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
@@ -554,6 +554,7 @@ interface ReviewData {
       <div class="decision-icon">{{ decisionIcon }}</div>
       <h2 class="decision-title">{{ kybResult.onboarding_decision || 'Verification Result' }}</h2>
       <div class="risk-score" *ngIf="computedRiskScore != null">Risk Score: {{ computedRiskScore }}/100</div>
+      <div class="risk-narrative" *ngIf="riskScoreNarrative">{{ riskScoreNarrative }}</div>
       <div class="entity-meta">{{ reviewData?.companyName || kybResult.entity_name || entityName }}</div>
     </div>
 
@@ -585,7 +586,7 @@ interface ReviewData {
 
         <div *ngIf="kybResult.executive_summary" class="es-section">
           <div class="es-sub-title">Executive Summary</div>
-          <p style="font-size:12px;color:#475569;line-height:1.5;margin:0">{{ kybResult.executive_summary }}</p>
+          <p style="font-size:12px;color:#8892b0;line-height:1.5;margin:0">{{ kybResult.executive_summary }}</p>
         </div>
       </div>
 
@@ -600,6 +601,7 @@ interface ReviewData {
               <div class="vc-name">{{ gate.name }}</div>
               <div class="vc-status">{{ gate.status }}</div>
               <div class="vc-detail" *ngIf="gate.detail">{{ gate.detail }}</div>
+              <span class="vc-conf" *ngIf="gate.conf != null">CONF {{ gate.conf }}%</span>
             </div>
             <div class="vc-score" *ngIf="gate.score != null">{{ gate.score }}/100</div>
           </div>
@@ -623,13 +625,13 @@ interface ReviewData {
         <div *ngIf="kybResult.key_findings?.length" style="margin-top:16px">
           <div class="result-section-title" style="margin-bottom:8px">Key Findings</div>
           <ul style="padding-left:16px;margin:0">
-            <li *ngFor="let f of kybResult.key_findings" style="font-size:12px;color:#475569;padding:3px 0;line-height:1.4">{{ f }}</li>
+            <li *ngFor="let f of kybResult.key_findings" style="font-size:12px;color:#8892b0;padding:3px 0;line-height:1.4">{{ f }}</li>
           </ul>
         </div>
 
         <div *ngIf="kybResult.raw" style="margin-top:16px">
           <div class="result-section-title" style="margin-bottom:8px">Raw Response</div>
-          <pre style="font-size:10px;color:#94a3b8;overflow-x:auto;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">{{ kybResult.raw }}</pre>
+          <pre style="font-size:10px;color:#8892b0;overflow-x:auto;white-space:pre-wrap;background:#0d1117;border:1px solid #1e2338;padding:10px;border-radius:6px">{{ kybResult.raw }}</pre>
         </div>
       </div>
     </div>
@@ -818,7 +820,7 @@ interface ReviewData {
       padding-right: 4px;
     }
     .page-header {
-      background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      background: #12151e; border-radius: 12px; padding: 24px; border: 1px solid #1e2338;
       flex-shrink: 0;
     }
     @media (max-width: 960px) {
@@ -826,305 +828,302 @@ interface ReviewData {
       .left-col { height: auto; overflow-y: visible; }
       .gate-tracker { height: auto !important; overflow-y: visible !important; }
     }
-    h1 { font-size: 22px; font-weight: 700; color: #1e3a5f; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 13px; margin: 0; }
+    h1 { font-size: 22px; font-weight: 700; color: #ffffff; margin: 0 0 4px; }
+    .subtitle { color: #8892b0; font-size: 13px; margin: 0; }
 
-    .section-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    .section-title { font-size: 16px; font-weight: 600; color: #1e3a5f; margin: 0 0 16px; }
+    .section-card { background: #12151e; border-radius: 12px; padding: 24px; border: 1px solid #1e2338; }
+    .section-title { font-size: 16px; font-weight: 600; color: #f5c542; margin: 0 0 16px; }
     .section-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .doc-count { font-size: 12px; color: #64748b; font-weight: 600; }
-    .section-note { font-size: 12px; color: #475569; margin: 0 0 16px; line-height: 1.6; }
+    .doc-count { font-size: 12px; color: #8892b0; font-weight: 600; }
+    .section-note { font-size: 12px; color: #8892b0; margin: 0 0 16px; line-height: 1.6; }
 
     .entity-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
     .field-group { display: flex; flex-direction: column; gap: 6px; }
-    .field-group label { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field-group label { font-size: 11px; font-weight: 700; color: #8892b0; text-transform: uppercase; letter-spacing: 0.5px; }
     .field-group input, .field-group select {
       padding: 10px 12px;
-      border: 1.5px solid #cbd5e1;
+      border: 1.5px solid #1e2338;
       border-radius: 8px;
       font-size: 13px;
-      color: #1e293b;
-      background: #ffffff;
+      color: #e2e8f0;
+      background: #0d1117;
       width: 100%;
       box-sizing: border-box;
       outline: none;
     }
-    .field-group input::placeholder { color: #94a3b8; }
-    .field-group input:focus, .field-group select:focus { border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30,58,95,0.08); }
-    .field-group input[value]:not([value=""]), .field-group select { color: #0f172a; font-weight: 500; }
+    .field-group input::placeholder { color: #374151; }
+    .field-group input:focus, .field-group select:focus { border-color: #f5c542; box-shadow: 0 0 0 3px rgba(245,197,66,0.08); }
+    .field-group select option { background: #12151e; color: #e2e8f0; }
 
     .doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-    .doc-card { border-radius: 10px; border: 2px dashed #e2e8f0; transition: border-color 0.2s; position: relative; }
-    .doc-card.has-file { border-style: solid; border-color: #cbd5e1; }
+    .doc-card { border-radius: 10px; border: 2px dashed #1e2338; transition: border-color 0.2s; position: relative; }
+    .doc-card.has-file { border-style: solid; border-color: #2a3050; }
     .doc-card.result-pass { border-color: #22c55e; border-style: solid; }
     .doc-card.result-review { border-color: #f59e0b; border-style: solid; }
     .doc-card.result-fail { border-color: #ef4444; border-style: solid; }
 
     .drop-zone { padding: 20px 16px; min-height: 140px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px; }
-    .drop-zone:hover { background: #f8fafc; }
+    .drop-zone:hover { background: #0d1117; }
 
     .drop-content { text-align: center; }
     .doc-icon { font-size: 28px; margin-bottom: 8px; }
-    .doc-label { font-size: 12px; font-weight: 600; color: #1e3a5f; margin-bottom: 4px; }
-    .doc-hint { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
-    .required-badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; }
-    .upload-cta { font-size: 11px; color: #94a3b8; }
+    .doc-label { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
+    .doc-hint { font-size: 10px; color: #374151; margin-bottom: 6px; }
+    .required-badge { display: inline-block; background: rgba(245,197,66,0.12); color: #f5c542; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; border: 1px solid rgba(245,197,66,0.2); }
+    .upload-cta { font-size: 11px; color: #374151; }
 
     .file-ready { text-align: center; position: relative; width: 100%; }
     .file-icon { font-size: 28px; margin-bottom: 6px; }
-    .file-name { font-size: 11px; color: #1e293b; font-weight: 600; word-break: break-all; margin-bottom: 2px; }
-    .file-size { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
-    .doc-label-small { font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+    .file-name { font-size: 11px; color: #e2e8f0; font-weight: 600; word-break: break-all; margin-bottom: 2px; }
+    .file-size { font-size: 10px; color: #374151; margin-bottom: 6px; }
+    .doc-label-small { font-size: 10px; color: #8892b0; margin-bottom: 6px; font-weight: 600; }
     .extract-chip { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; display: inline-block; margin-bottom: 6px; }
-    .extract-chip.extracting  { background: #fef3c7; color: #92400e; }
-    .extract-chip.extracted   { background: #dcfce7; color: #166534; }
-    .extract-chip.no-text     { background: #f1f5f9; color: #94a3b8; }
-    .btn-check { background: #1e3a5f; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
-    .btn-check:hover { background: #2d5a8e; }
+    .extract-chip.extracting  { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .extract-chip.extracted   { background: rgba(34,197,94,0.12); color: #22c55e; }
+    .extract-chip.no-text     { background: #1e2338; color: #374151; }
+    .btn-check { background: #f5c542; color: #0a0c14; border: none; padding: 7px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .btn-check:hover { background: #fbbf24; }
     .btn-remove { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
     .checking-state { text-align: center; }
-    .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #1e3a5f; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #1e2338; border-top-color: #f5c542; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .checking-label { font-size: 12px; font-weight: 600; color: #1e3a5f; }
-    .checking-sub { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+    .checking-label { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .checking-sub { font-size: 10px; color: #374151; margin-top: 4px; }
 
     .result-state { text-align: center; width: 100%; }
     .result-badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-    .badge-pass { background: #dcfce7; color: #166534; }
-    .badge-review { background: #fef3c7; color: #92400e; }
-    .badge-fail { background: #fee2e2; color: #991b1b; }
+    .badge-pass { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .badge-review { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .badge-fail { background: rgba(239,68,68,0.15); color: #ef4444; }
     .result-checks { display: flex; gap: 6px; justify-content: center; margin: 6px 0; }
     .check-dot { width: 20px; height: 20px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; cursor: help; }
-    .dot-pass { background: #dcfce7; color: #166534; }
-    .dot-fail { background: #fee2e2; color: #991b1b; }
-    .confidence { font-size: 10px; color: #94a3b8; }
-    .btn-recheck { background: none; border: 1px solid #cbd5e1; color: #64748b; padding: 4px 10px; border-radius: 5px; font-size: 10px; cursor: pointer; margin-top: 6px; }
+    .dot-pass { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .dot-fail { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .confidence { font-size: 10px; color: #374151; }
+    .btn-recheck { background: none; border: 1px solid #1e2338; color: #8892b0; padding: 4px 10px; border-radius: 5px; font-size: 10px; cursor: pointer; margin-top: 6px; }
 
-    .result-detail { padding: 12px 14px; border-top: 1px solid #f1f5f9; }
-    .check-row { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; font-size: 11px; }
-    .check-row.check-fail { color: #991b1b; }
+    .result-detail { padding: 12px 14px; border-top: 1px solid #1e2338; }
+    .check-row { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; font-size: 11px; color: #8892b0; }
+    .check-row.check-fail { color: #ef4444; }
     .check-icon { flex-shrink: 0; font-weight: 700; }
     .check-name { flex-shrink: 0; font-weight: 600; min-width: 70px; }
-    .check-issue { color: #64748b; font-style: italic; }
-    .recommendation { margin-top: 8px; font-size: 11px; color: #1e3a5f; background: #f0f9ff; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; }
-    .resubmit-alert { margin-top: 8px; font-size: 11px; color: #92400e; background: #fef3c7; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #f59e0b; }
-    .resubmit-fail  { color: #991b1b; background: #fee2e2; border-left-color: #ef4444; }
+    .check-issue { color: #8892b0; font-style: italic; }
+    .recommendation { margin-top: 8px; font-size: 11px; color: #e2e8f0; background: rgba(59,130,246,0.08); padding: 8px 10px; border-radius: 6px; border-left: 3px solid #3b82f6; }
+    .resubmit-alert { margin-top: 8px; font-size: 11px; color: #f59e0b; background: rgba(245,158,11,0.08); padding: 8px 10px; border-radius: 6px; border-left: 3px solid #f59e0b; }
+    .resubmit-fail  { color: #ef4444; background: rgba(239,68,68,0.08); border-left-color: #ef4444; }
 
-    .slot-error { padding: 8px 12px; background: #fee2e2; color: #991b1b; font-size: 11px; border-radius: 0 0 8px 8px; }
+    .slot-error { padding: 8px 12px; background: rgba(239,68,68,0.1); color: #ef4444; font-size: 11px; border-radius: 0 0 8px 8px; }
 
     .actions-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .btn-primary { background: #1e3a5f; color: white; border: none; padding: 11px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .btn-primary:hover:not(:disabled) { background: #2d5a8e; }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-secondary { background: white; color: #64748b; border: 1px solid #e2e8f0; padding: 11px 20px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-    .action-note { font-size: 12px; color: #16a34a; font-weight: 600; }
+    .btn-primary { background: #f5c542; color: #0a0c14; border: none; padding: 11px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-primary:hover:not(:disabled) { background: #fbbf24; }
+    .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-secondary { background: #1e2338; color: #8892b0; border: 1px solid #2a3050; padding: 11px 20px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-secondary:hover { background: #252a42; color: #e2e8f0; }
+    .action-note { font-size: 12px; color: #22c55e; font-weight: 600; }
 
     .summary-card { }
     .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
     .summary-stat { text-align: center; padding: 16px; border-radius: 8px; }
-    .stat-pass { background: #dcfce7; }
-    .stat-review { background: #fef3c7; }
-    .stat-fail { background: #fee2e2; }
-    .stat-pending { background: #f1f5f9; }
+    .stat-pass { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+    .stat-review { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); }
+    .stat-fail { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); }
+    .stat-pending { background: rgba(255,255,255,0.03); border: 1px solid #1e2338; }
     .stat-num { font-size: 28px; font-weight: 700; }
-    .stat-pass .stat-num { color: #166534; }
-    .stat-review .stat-num { color: #92400e; }
-    .stat-fail .stat-num { color: #991b1b; }
-    .stat-pending .stat-num { color: #64748b; }
-    .stat-label { font-size: 11px; font-weight: 600; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-pass .stat-num { color: #22c55e; }
+    .stat-review .stat-num { color: #f59e0b; }
+    .stat-fail .stat-num { color: #ef4444; }
+    .stat-pending .stat-num { color: #374151; }
+    .stat-label { font-size: 11px; font-weight: 600; color: #8892b0; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
     .summary-message { padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; }
-    .summary-message { background: #fee2e2; color: #991b1b; }
-    .review-msg { background: #fef3c7; color: #92400e; }
-    .pass-msg { background: #dcfce7; color: #166534; }
+    .summary-message { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .review-msg { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .pass-msg { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
 
-    .submit-card { border: 2px solid #22c55e; }
+    .submit-card { border: 1px solid rgba(245,197,66,0.3) !important; background: rgba(245,197,66,0.03) !important; }
     .process-list { padding-left: 20px; margin: 0 0 20px; }
-    .process-list li { font-size: 13px; color: #475569; padding: 4px 0; }
+    .process-list li { font-size: 13px; color: #8892b0; padding: 4px 0; }
 
-    .gate-progress-row { padding: 7px 0; font-size: 12px; color: #64748b; border-bottom: 1px solid #f1f5f9; }
-    .ocr-progress-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f1f5f9; }
+    .gate-progress-row { padding: 7px 0; font-size: 12px; color: #8892b0; border-bottom: 1px solid #1e2338; }
+    .ocr-progress-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1e2338; }
     .ocr-status-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
-    .ocr-doc-label { font-size: 12px; color: #1e3a5f; font-weight: 500; flex: 1; }
+    .ocr-doc-label { font-size: 12px; color: #e2e8f0; font-weight: 500; flex: 1; }
     .ocr-status-badge { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
-    .ocr-done    { background: #dcfce7; color: #166534; }
-    .ocr-fail    { background: #fee2e2; color: #991b1b; }
-    .ocr-active  { background: #dbeafe; color: #1d4ed8; }
-    .ocr-pending { background: #f1f5f9; color: #94a3b8; }
+    .ocr-done    { background: rgba(34,197,94,0.12); color: #22c55e; }
+    .ocr-fail    { background: rgba(239,68,68,0.12); color: #ef4444; }
+    .ocr-active  { background: rgba(59,130,246,0.12); color: #3b82f6; }
+    .ocr-pending { background: #1e2338; color: #374151; }
 
     .result-card { }
-    .decision-header { text-align: center; padding: 24px 0 20px; border-bottom: 1px solid #f1f5f9; margin-bottom: 20px; }
+    .decision-header { text-align: center; padding: 24px 0 20px; border-bottom: 1px solid #1e2338; margin-bottom: 20px; }
     .decision-icon { font-size: 48px; margin-bottom: 8px; }
-    .decision-title { font-size: 26px; font-weight: 700; color: #1e3a5f; margin: 0 0 6px; }
-    .risk-score { font-size: 15px; color: #64748b; font-weight: 600; }
-    .entity-meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .decision-title { font-size: 26px; font-weight: 700; color: #ffffff; margin: 0 0 6px; }
+    .risk-score { font-size: 16px; color: #f5c542; font-weight: 700; }
+    .risk-narrative { font-size: 12px; color: #8892b0; margin-top: 6px; line-height: 1.6; max-width: 560px; margin-left: auto; margin-right: auto; background: rgba(255,255,255,0.03); border: 1px solid #1e2338; border-radius: 8px; padding: 8px 14px; }
+    .entity-meta { font-size: 12px; color: #374151; margin-top: 8px; }
 
     .result-section { margin-bottom: 20px; }
-    .result-section-title { font-size: 13px; font-weight: 600; color: #1e3a5f; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px; }
+    .result-section-title { font-size: 13px; font-weight: 600; color: #8892b0; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px; }
 
-    .gates-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .gate-card { padding: 12px; border-radius: 8px; border: 1px solid; }
-    .gate-pass { background: #f0fdf4; border-color: #86efac; }
-    .gate-warn { background: #fffbeb; border-color: #fcd34d; }
-    .gate-fail { background: #fef2f2; border-color: #fca5a5; }
-    .gate-name { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
-    .gate-status { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
-    .gate-detail { font-size: 11px; color: #64748b; line-height: 1.4; }
-
-    .result-actions { display: flex; gap: 12px; border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 8px; }
+    .result-actions { display: flex; gap: 12px; border-top: 1px solid #1e2338; padding-top: 16px; margin-top: 8px; }
 
     /* ── Review panel ─────────────────────────────────────── */
-    .review-card { border: 2px solid #3b82f6; background: #ffffff; }
-    .extract-summary { font-size: 11px; font-weight: 600; padding: 7px 12px; border-radius: 6px; margin-bottom: 16px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-    .extract-summary.extract-warn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .review-card { border: 1px solid #3b82f6 !important; }
+    .extract-summary { font-size: 11px; font-weight: 600; padding: 7px 12px; border-radius: 6px; margin-bottom: 16px; background: rgba(34,197,94,0.08); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+    .extract-summary.extract-warn { background: rgba(245,158,11,0.08); color: #f59e0b; border-color: rgba(245,158,11,0.2); }
     .review-card .field-group input:not(:placeholder-shown),
     .review-card .field-group select:not([value=""]) {
-      border-color: #86efac;
-      background: #f0fdf4;
+      border-color: rgba(34,197,94,0.4);
+      background: rgba(34,197,94,0.04);
     }
     .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
     .review-col { display: flex; flex-direction: column; gap: 12px; }
-    .review-sub-title { font-size: 11px; font-weight: 700; color: #1e3a5f; text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 4px; }
+    .review-sub-title { font-size: 11px; font-weight: 700; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 4px; }
     .review-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .person-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .person-card { background: #0d1117; border: 1px solid #1e2338; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
     .person-card-header { display: flex; justify-content: space-between; align-items: center; }
-    .person-num { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-    .btn-remove-person { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
+    .person-num { font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-remove-person { background: none; border: none; color: #1e2338; cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
     .btn-remove-person:hover { color: #ef4444; }
-    .btn-add-person { background: none; border: 1px dashed #cbd5e1; color: #94a3b8; padding: 7px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; width: 100%; text-align: center; transition: all 0.15s; }
-    .btn-add-person:hover { background: #f1f5f9; color: #64748b; border-color: #94a3b8; }
-    .review-errors { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; color: #991b1b; font-size: 12px; font-weight: 600; }
-    .review-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid #f1f5f9; }
-    .review-note { font-size: 11px; color: #94a3b8; }
+    .btn-add-person { background: none; border: 1px dashed #1e2338; color: #374151; padding: 7px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; width: 100%; text-align: center; transition: all 0.15s; }
+    .btn-add-person:hover { background: #1e2338; color: #8892b0; }
+    .review-errors { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; color: #ef4444; font-size: 12px; font-weight: 600; }
+    .review-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid #1e2338; }
+    .review-note { font-size: 11px; color: #374151; }
 
     /* ── KYB result — two-column layout ───────────────────── */
     .result-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
     .result-summary-col { }
     .result-checks-col { }
-    .es-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid #f8fafc; font-size: 12px; align-items: flex-start; }
-    .es-label { color: #94a3b8; font-weight: 600; min-width: 90px; flex-shrink: 0; font-size: 11px; padding-top: 1px; }
-    .es-value { color: #1e293b; line-height: 1.4; }
+    .es-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid #1a1d2a; font-size: 12px; align-items: flex-start; }
+    .es-label { color: #374151; font-weight: 600; min-width: 90px; flex-shrink: 0; font-size: 11px; padding-top: 1px; }
+    .es-value { color: #e2e8f0; line-height: 1.4; }
     .es-section { margin-top: 14px; }
-    .es-sub-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .es-person { font-size: 12px; color: #475569; padding: 2px 0; }
+    .es-sub-title { font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .es-person { font-size: 12px; color: #8892b0; padding: 2px 0; }
 
-    .vc-row { display: flex; gap: 12px; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; }
-    .vc-pass { background: #f0fdf4; }
-    .vc-warn { background: #fffbeb; }
-    .vc-fail { background: #fef2f2; }
+    .vc-row { display: flex; gap: 12px; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; align-items: flex-start; }
+    .vc-pass { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.15); }
+    .vc-warn { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.15); }
+    .vc-fail { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.15); }
     .vc-icon { font-size: 15px; font-weight: 700; width: 18px; flex-shrink: 0; margin-top: 2px; }
-    .vc-pass .vc-icon { color: #16a34a; }
-    .vc-warn .vc-icon { color: #d97706; }
-    .vc-fail .vc-icon { color: #dc2626; }
+    .vc-pass .vc-icon { color: #22c55e; }
+    .vc-warn .vc-icon { color: #f59e0b; }
+    .vc-fail .vc-icon { color: #ef4444; }
     .vc-body { flex: 1; }
-    .vc-name { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
-    .vc-status { font-size: 13px; font-weight: 700; color: #1e293b; }
-    .vc-detail { font-size: 11px; color: #64748b; line-height: 1.4; margin-top: 3px; }
+    .vc-name { font-size: 10px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+    .vc-status { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+    .vc-detail { font-size: 11px; color: #8892b0; line-height: 1.4; margin-top: 3px; }
+    .vc-conf { display: inline-block; margin-top: 4px; font-size: 10px; font-weight: 700; color: #8892b0; background: #1e2338; padding: 1px 7px; border-radius: 8px; letter-spacing: 0.3px; }
+    .vc-pass .vc-conf { background: rgba(34,197,94,0.12); color: #22c55e; }
+    .vc-warn .vc-conf { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .vc-fail .vc-conf { background: rgba(239,68,68,0.12); color: #ef4444; }
 
     .gate-tracker { height: 100%; overflow-y: auto; padding: 20px; }
     .gate-track { display: flex; flex-direction: column; gap: 2px; }
     .gate-track-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: 8px; transition: background 0.2s; }
-    .gate-track-item.gt-active { background: #eff6ff; }
-    .gate-track-item.gt-done { background: #f0fdf4; }
-    .gt-dot { width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .gate-track-item.gt-active { background: rgba(59,130,246,0.07); }
+    .gate-track-item.gt-done { background: rgba(34,197,94,0.07); }
+    .gt-dot { width: 26px; height: 26px; border-radius: 50%; background: #1e2338; color: #374151; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
     .gt-active .gt-dot { background: #3b82f6; color: white; }
     .gt-done .gt-dot { background: #22c55e; color: white; }
     .gt-info { flex: 1; }
-    .gt-name { font-size: 12px; font-weight: 600; color: #1e3a5f; }
-    .gt-status { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-    .gt-badge { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; background: #f1f5f9; color: #94a3b8; align-self: center; }
-    .gt-b-done { background: #dcfce7; color: #166534; }
-    .gt-b-fail { background: #fee2e2; color: #991b1b; }
-    .gt-b-warn { background: #fef3c7; color: #92400e; }
-    .gt-b-active { background: #dbeafe; color: #1d4ed8; }
+    .gt-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .gt-status { font-size: 10px; color: #374151; margin-top: 2px; }
+    .gt-badge { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; background: #1e2338; color: #374151; align-self: center; }
+    .gt-b-done { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .gt-b-fail { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .gt-b-warn { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .gt-b-active { background: rgba(59,130,246,0.15); color: #3b82f6; }
 
     /* ── Phase 1 review panel ─────────────────────────────── */
-    .phase1-review-card { border: 2px solid #3b82f6; }
+    .phase1-review-card { border: 1px solid rgba(59,130,246,0.5) !important; }
     .phase1-results { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
     .p1-gate-row { display: flex; gap: 12px; padding: 12px; border-radius: 8px; align-items: flex-start; border: 1px solid; }
-    .p1-pass { background: #f0fdf4; border-color: #86efac; }
-    .p1-warn { background: #fffbeb; border-color: #fcd34d; }
-    .p1-fail { background: #fef2f2; border-color: #fca5a5; }
+    .p1-pass { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.25); }
+    .p1-warn { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); }
+    .p1-fail { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); }
     .p1-icon { font-size: 16px; font-weight: 700; width: 20px; flex-shrink: 0; margin-top: 2px; }
-    .p1-pass .p1-icon { color: #16a34a; }
-    .p1-warn .p1-icon { color: #d97706; }
-    .p1-fail .p1-icon { color: #dc2626; }
+    .p1-pass .p1-icon { color: #22c55e; }
+    .p1-warn .p1-icon { color: #f59e0b; }
+    .p1-fail .p1-icon { color: #ef4444; }
     .p1-body { flex: 1; }
-    .p1-name { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
-    .p1-status { font-size: 13px; font-weight: 700; color: #1e293b; }
-    .p1-detail { font-size: 11px; color: #64748b; margin-top: 3px; line-height: 1.4; }
-    .p1-score { font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap; background: #f1f5f9; padding: 3px 8px; border-radius: 10px; align-self: center; }
-    .phase1-actions { display: flex; gap: 12px; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    .p1-name { font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+    .p1-status { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+    .p1-detail { font-size: 11px; color: #8892b0; margin-top: 3px; line-height: 1.4; }
+    .p1-score { font-size: 11px; font-weight: 700; color: #8892b0; white-space: nowrap; background: #1e2338; padding: 3px 8px; border-radius: 10px; align-self: center; }
+    .phase1-actions { display: flex; gap: 12px; align-items: center; border-top: 1px solid #1e2338; padding-top: 16px; }
 
     /* ── Per-gate score badge in validation checks ─────────── */
-    .vc-score { font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap; background: #f1f5f9; padding: 3px 8px; border-radius: 10px; align-self: center; flex-shrink: 0; }
-    .vc-pass .vc-score { background: #dcfce7; color: #166534; }
-    .vc-warn .vc-score { background: #fef3c7; color: #92400e; }
-    .vc-fail .vc-score { background: #fee2e2; color: #991b1b; }
+    .vc-score { font-size: 11px; font-weight: 700; color: #8892b0; white-space: nowrap; background: #1e2338; padding: 3px 8px; border-radius: 10px; align-self: flex-start; flex-shrink: 0; margin-top: 2px; }
+    .vc-pass .vc-score { background: rgba(34,197,94,0.12); color: #22c55e; }
+    .vc-warn .vc-score { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .vc-fail .vc-score { background: rgba(239,68,68,0.12); color: #ef4444; }
 
     /* ── Gate progress done row ─────────────────────────────── */
-    .gate-done-row { color: #16a34a; font-weight: 600; }
+    .gate-done-row { color: #22c55e; font-weight: 600; }
 
     /* ── Entity details validation errors ───────────────────── */
-    .entity-errors { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; margin-top: 12px; }
-    .entity-errors span { font-size: 12px; color: #991b1b; font-weight: 600; }
+    .entity-errors { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; margin-top: 12px; }
+    .entity-errors span { font-size: 12px; color: #ef4444; font-weight: 600; }
 
     /* ── Persona KYC decision badge & risk level pill ──────── */
     .kyc-decision-badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; vertical-align: middle; }
-    .badge-green   { background: #dcfce7; color: #166534; }
-    .badge-review  { background: #fef3c7; color: #92400e; }
-    .badge-fail    { background: #fee2e2; color: #991b1b; }
+    .badge-green   { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .badge-review  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .badge-fail    { background: rgba(239,68,68,0.15); color: #ef4444; }
     .kyc-risk-level { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; vertical-align: middle; }
-    .risk-low    { background: #dcfce7; color: #166534; }
-    .risk-medium { background: #fef3c7; color: #92400e; }
-    .risk-high   { background: #fee2e2; color: #991b1b; }
+    .risk-low    { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .risk-medium { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .risk-high   { background: rgba(239,68,68,0.15); color: #ef4444; }
 
     /* ── Sanctions hard-block & PEP warning in Phase 2a ─────── */
     .sanctions-block { margin-top: 16px; }
-    .sanctions-alert { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 14px 16px; color: #991b1b; font-size: 13px; font-weight: 600; line-height: 1.5; }
-    .sanctions-alert span { font-weight: 400; display: block; margin-top: 4px; }
-    .pep-warning-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px 14px; color: #92400e; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+    .sanctions-alert { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 14px 16px; color: #ef4444; font-size: 13px; font-weight: 600; line-height: 1.5; }
+    .sanctions-alert span { font-weight: 400; display: block; margin-top: 4px; color: #8892b0; }
+    .pep-warning-banner { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 10px 14px; color: #f59e0b; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
 
     /* ── AML findings list (inline under Gate 8) ────────────── */
-    .aml-findings { margin: 2px 0 6px 32px; padding: 10px 12px; background: #fef9f0; border: 1px solid #fcd34d; border-radius: 6px; }
-    .aml-findings-header { font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-    .aml-finding { padding: 6px 0; border-bottom: 1px solid #fde68a; }
+    .aml-findings { margin: 2px 0 6px 32px; padding: 10px 12px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; }
+    .aml-findings-header { font-size: 10px; font-weight: 700; color: #ef4444; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .aml-finding { padding: 6px 0; border-bottom: 1px solid rgba(239,68,68,0.12); }
     .aml-finding:last-child { border-bottom: none; padding-bottom: 0; }
     .aml-finding-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
-    .aml-title { font-size: 12px; color: #1e3a5f; font-weight: 600; line-height: 1.3; }
-    .aml-cat { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; background: #fee2e2; color: #991b1b; }
-    .cat-criminal { background: #fee2e2; color: #991b1b; }
-    .cat-regulatory { background: #fef3c7; color: #92400e; }
-    .cat-fraud { background: #fce7f3; color: #9d174d; }
-    .aml-finding-meta { display: flex; gap: 12px; font-size: 11px; color: #64748b; margin-bottom: 2px; }
+    .aml-title { font-size: 12px; color: #e2e8f0; font-weight: 600; line-height: 1.3; }
+    .aml-cat { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; background: rgba(239,68,68,0.15); color: #ef4444; }
+    .cat-criminal { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .cat-regulatory { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .cat-fraud { background: rgba(236,72,153,0.15); color: #ec4899; }
+    .aml-finding-meta { display: flex; gap: 12px; font-size: 11px; color: #8892b0; margin-bottom: 2px; }
     .aml-source { font-weight: 600; }
-    .aml-url { font-size: 10px; color: #64748b; word-break: break-all; font-family: monospace; }
+    .aml-url { font-size: 10px; color: #374151; word-break: break-all; font-family: monospace; }
 
     /* ── Score breakdown section ─────────────────────────────── */
-    .score-breakdown-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+    .score-breakdown-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #1e2338; }
     .score-group { margin-bottom: 14px; }
-    .score-group-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; padding-left: 2px; }
+    .score-group-label { font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; padding-left: 2px; }
     .score-grid { display: flex; flex-direction: column; gap: 6px; }
-    .score-item { display: grid; grid-template-columns: 220px 1fr 52px; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; background: #f8fafc; }
-    .si-name { font-size: 12px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .si-bar-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-    .si-bar { height: 100%; border-radius: 4px; background: #94a3b8; transition: width 0.4s; }
-    .si-val { font-size: 12px; font-weight: 700; color: #475569; text-align: right; white-space: nowrap; }
-    .si-denom { font-weight: 400; color: #94a3b8; font-size: 10px; }
+    .score-item { display: grid; grid-template-columns: 220px 1fr 52px; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; background: #0d1117; border: 1px solid #1e2338; }
+    .si-name { font-size: 12px; color: #8892b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .si-bar-track { height: 8px; background: #1e2338; border-radius: 4px; overflow: hidden; }
+    .si-bar { height: 100%; border-radius: 4px; background: #374151; transition: width 0.4s; }
+    .si-val { font-size: 12px; font-weight: 700; color: #8892b0; text-align: right; white-space: nowrap; }
+    .si-denom { font-weight: 400; color: #374151; font-size: 10px; }
     .score-item.si-pass .si-bar { background: #22c55e; }
     .score-item.si-warn .si-bar { background: #f59e0b; }
     .score-item.si-fail .si-bar { background: #ef4444; }
-    .score-item.si-pass .si-val { color: #15803d; }
-    .score-item.si-warn .si-val { color: #b45309; }
-    .score-item.si-fail .si-val { color: #b91c1c; }
-    .score-item.si-total { background: #f1f5f9; border: 1px solid #cbd5e1; }
-    .score-item.si-total .si-name { font-weight: 700; color: #1e3a5f; }
-    .score-item.si-total .si-bar { background: #3b82f6; }
-    .score-item.si-total .si-val { color: #1e3a5f; font-size: 13px; }
-    .score-item.si-liability { background: #faf5ff; border: 1px solid #d8b4fe; }
-    .score-item.si-liability .si-name { font-weight: 700; color: #7c3aed; }
-    .score-item.si-liability .si-bar { background: #9333ea; }
-    .score-item.si-liability .si-val { color: #7c3aed; font-size: 13px; }
+    .score-item.si-pass .si-val { color: #22c55e; }
+    .score-item.si-warn .si-val { color: #f59e0b; }
+    .score-item.si-fail .si-val { color: #ef4444; }
+    .score-item.si-total { background: #0d1117; border: 1px solid rgba(245,197,66,0.3); }
+    .score-item.si-total .si-name { font-weight: 700; color: #f5c542; }
+    .score-item.si-total .si-bar { background: #f5c542; }
+    .score-item.si-total .si-val { color: #f5c542; font-size: 13px; }
+    .score-item.si-liability { background: #0d1117; border: 1px solid rgba(168,85,247,0.3); }
+    .score-item.si-liability .si-name { font-weight: 700; color: #a855f7; }
+    .score-item.si-liability .si-bar { background: #a855f7; }
+    .score-item.si-liability .si-val { color: #a855f7; font-size: 13px; }
   `]
 })
 export class KycOnboardingComponent {
@@ -2006,39 +2005,46 @@ export class KycOnboardingComponent {
     const gate1Score = checkedSlots.length
       ? Math.round(checkedSlots.reduce((sum, s) => sum + s.result!.confidence_score * 100, 0) / checkedSlots.length)
       : null;
+    // Derive confidence from risk score for each gate (100 - risk/maxRisk * 100)
+    const dc = (score: number | null, max: number): number | null =>
+      score != null ? Math.max(0, Math.round((max - score) / max * 100)) : null;
     return [
       { name: 'Gate 1 — Document Quality Check',
         pass: this.allPassed,
         warning: !this.allPassed && this.reviewCount > 0,
         status: this.allPassed ? '✓ PASS' : '✗ FAIL',
         detail: `${this.passCount}/${this.slots.length} documents passed quality pre-screen`,
-        score: gate1Score, group: 'docs' },
+        score: gate1Score, conf: gate1Score, group: 'docs' },
       { name: 'Gate 2 — Data Extraction & Review',
         pass: true, warning: false,
         status: '✓ CONFIRMED',
         detail: `${this.reviewData?.companyName || 'Entity'} details reviewed and confirmed by applicant`,
-        score: null, group: 'docs' },
+        score: null, conf: null, group: 'docs' },
       { name: 'Gate 3 — Company Registry',
         pass: r.company_registry_verified, warning: false,
         status: r.company_registry_verified ? '✓ ACTIVE' : '✗ ' + (r.company_registry_status || 'FAILED'),
         detail: r.company_registry_summary || '',
-        score: r.company_registry_risk_score ?? null, group: 'registry' },
+        score: r.company_registry_risk_score ?? null,
+        conf: dc(r.company_registry_risk_score ?? null, 30), group: 'registry' },
       { name: 'Gate 4 — Director Verification',
         pass: r.director_verification_matched, warning: !r.director_verification_matched,
         status: r.director_verification_matched ? '✓ MATCHED' : '⚠ MISMATCH',
         detail: r.director_verification_summary || '',
-        score: r.director_risk_score ?? null, group: 'registry' },
+        score: r.director_risk_score ?? null,
+        conf: dc(r.director_risk_score ?? null, 20), group: 'registry' },
       { name: 'Gate 5 — UBO Identification',
         pass: r.ubo_identification_declared, warning: !r.ubo_identification_declared,
         status: r.ubo_identification_declared ? '✓ DECLARED' : '⚠ MISSING',
         detail: r.ubo_identification_summary || '',
-        score: r.ubo_risk_score ?? null, group: 'registry' },
+        score: r.ubo_risk_score ?? null,
+        conf: dc(r.ubo_risk_score ?? null, 15), group: 'registry' },
       { name: 'Gate 6 — PEP / Sanctions',
         pass: !r.sanctions_match && !r.pep_identified,
         warning: r.pep_identified && !r.sanctions_match,
         status: r.sanctions_match ? '✗ SANCTIONED' : r.pep_identified ? '⚠ PEP IDENTIFIED' : '✓ CLEAR',
         detail: r.pep_sanctions_summary || '',
-        score: r.pep_sanctions_risk_score ?? null, group: 'pep' },
+        score: r.pep_sanctions_risk_score ?? null,
+        conf: dc(r.pep_sanctions_risk_score ?? null, 25), group: 'pep' },
       { name: 'Gate 7 — KYC Identity',
         pass: r.kyc_identity_verified && r.kyc_identity_decision !== 'FAIL',
         warning: r.kyc_identity_decision === 'MANUAL_REVIEW',
@@ -2049,13 +2055,18 @@ export class KycOnboardingComponent {
         detail: r.kyc_identity_summary || '',
         score: r.kyc_identity_confidence != null
           ? this.confPct(r.kyc_identity_confidence)
-          : r.kyc_identity_risk_score ?? null, group: 'kyc' },
+          : r.kyc_identity_risk_score ?? null,
+        conf: r.kyc_identity_confidence != null
+          ? this.confPct(r.kyc_identity_confidence)
+          : dc(r.kyc_identity_risk_score ?? null, 20),
+        group: 'kyc' },
       { name: 'Gate 8 — AML Adverse Media',
         pass: !r.adverse_media_found,
         warning: r.adverse_media_found && r.aml_adverse_media_risk_level !== 'high',
         status: r.adverse_media_found ? '⚠ FLAGGED' : '✓ CLEAR',
         detail: r.aml_adverse_media_summary || '',
-        score: r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? null, group: 'aml' }
+        score: r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? null,
+        conf: dc(r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? null, 20), group: 'aml' }
     ];
   }
 
@@ -2064,6 +2075,57 @@ export class KycOnboardingComponent {
   get pepGates()      { return this.gateResults.filter(g => g.group === 'pep'); }
   get kycGates()      { return this.gateResults.filter(g => g.group === 'kyc'); }
   get amlGates()      { return this.gateResults.filter(g => g.group === 'aml'); }
+
+  get riskScoreNarrative(): string {
+    if (!this.kybResult) return '';
+    const r = this.kybResult;
+    const score = this.computedRiskScore;
+    if (score == null) return '';
+    const level = score <= 20 ? 'Low risk' : score <= 40 ? 'Moderate risk' : score <= 65 ? 'Elevated risk' : 'High risk';
+    const parts: string[] = [];
+    // Document quality
+    const gate1Score = this.gateResults.find(g => g.group === 'docs' && g.conf != null)?.conf;
+    if (gate1Score != null) parts.push(`docs ${gate1Score}% quality`);
+    // Registry
+    if (r.company_registry_verified) {
+      const conf = this.gateResults.find(g => g.group === 'registry')?.conf;
+      parts.push(`registry verified${conf != null ? ` (${conf}% conf)` : ''}`);
+    } else {
+      parts.push(`registry ${r.company_registry_status || 'unverified'}`);
+    }
+    // Directors & UBOs
+    const dirConf = this.gateResults.find(g => g.name.includes('Gate 4'))?.conf;
+    if (r.director_verification_matched) parts.push(`directors matched${dirConf != null ? ` (${dirConf}%)` : ''}`);
+    else parts.push('director mismatch');
+    // PEP/Sanctions
+    if (r.sanctions_match) {
+      parts.push('SANCTIONED — onboarding blocked');
+    } else if (r.pep_identified) {
+      parts.push('PEP identified (EDD required)');
+    } else {
+      const pepConf = this.gateResults.find(g => g.group === 'pep')?.conf;
+      parts.push(`sanctions/PEP clear${pepConf != null ? ` (${pepConf}%)` : ''}`);
+    }
+    // KYC identity
+    const kycConf = r.kyc_identity_confidence != null ? this.confPct(r.kyc_identity_confidence) : null;
+    if (r.kyc_identity_decision === 'GREEN') {
+      parts.push(`KYC GREEN${kycConf != null ? ` ${kycConf}% confidence` : ''}`);
+    } else if (r.kyc_identity_decision === 'MANUAL_REVIEW') {
+      parts.push(`KYC manual review${kycConf != null ? ` ${kycConf}% conf` : ''}`);
+    } else if (r.kyc_identity_decision === 'FAIL') {
+      parts.push('KYC identity failed');
+    } else if (r.kyc_identity_verified) {
+      parts.push(`KYC verified${kycConf != null ? ` ${kycConf}%` : ''}`);
+    }
+    // AML
+    if (r.adverse_media_found) {
+      const amlScore = r.aml_risk_score ?? r.aml_adverse_media_risk_score;
+      parts.push(`adverse media flagged${amlScore != null ? ` (risk ${amlScore}/20)` : ''}`);
+    } else {
+      parts.push('no adverse media');
+    }
+    return `${level} — ${parts.join(' · ')}`;
+  }
 
   // Normalise Persona confidence to 0–1 regardless of whether it was sent as 0.95 or 95.
   private normConf(v: number | null | undefined): number {
