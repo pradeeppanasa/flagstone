@@ -409,10 +409,16 @@ interface ReviewData {
       <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running Gate 6 — PEP &amp; Sanctions</h2>
       <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Screening all directors and UBOs against OFAC, UN, EU and HMT sanctions lists…</p>
     </div>
-    <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
-      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director information verified</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 5 — Beneficial owners identified</div>
+    <div style="max-width:420px;margin:0 auto;padding:0 20px 24px;text-align:left">
+      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Company Registry
+        <span *ngIf="kybPhase1Result?.company_registry_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.company_registry_risk_score }}/30</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director Verification
+        <span *ngIf="kybPhase1Result?.director_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.director_risk_score }}/20</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 5 — UBO Identification
+        <span *ngIf="kybPhase1Result?.ubo_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.ubo_risk_score }}/15</span>
+      </div>
       <div class="gate-progress-row">⏳ Gate 6 — PEP and sanctions screening</div>
     </div>
   </div>
@@ -467,11 +473,22 @@ interface ReviewData {
       <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running Gate 7 — KYC Identity Check</h2>
       <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Verifying director identity documents…</p>
     </div>
-    <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
-      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director information verified</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 5 — Beneficial owners identified</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 6 — PEP and sanctions screening complete</div>
+    <div style="max-width:420px;margin:0 auto;padding:0 20px 24px;text-align:left">
+      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Company Registry
+        <span *ngIf="kybPhase1Result?.company_registry_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.company_registry_risk_score }}/30</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director Verification
+        <span *ngIf="kybPhase1Result?.director_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.director_risk_score }}/20</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 5 — UBO Identification
+        <span *ngIf="kybPhase1Result?.ubo_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.ubo_risk_score }}/15</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 6 — PEP &amp; Sanctions
+        <span style="float:right;font-size:10px;color:{{ kybPhase2aResult?.sanctions_match ? '#ef4444' : kybPhase2aResult?.pep_identified ? '#f59e0b' : '#22c55e' }};opacity:0.9">
+          {{ kybPhase2aResult?.sanctions_match ? 'SANCTIONED' : kybPhase2aResult?.pep_identified ? 'PEP HIT' : 'CLEAR' }}
+          <ng-container *ngIf="kybPhase2aResult?.pep_sanctions_risk_score != null"> · Risk {{ kybPhase2aResult.pep_sanctions_risk_score }}/25</ng-container>
+        </span>
+      </div>
       <div class="gate-progress-row">⏳ Gate 7 — KYC identity verification</div>
     </div>
   </div>
@@ -529,12 +546,28 @@ interface ReviewData {
       <h2 style="color:#ffffff;margin:0 0 6px;font-size:18px">Running Gates 8–9 — AML &amp; Risk Scoring</h2>
       <p style="color:#8892b0;font-size:13px;margin:0 0 20px">Adverse media check and final risk scoring in progress…</p>
     </div>
-    <div style="max-width:360px;margin:0 auto;padding:0 20px 24px;text-align:left">
-      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Companies House registry validated</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director information verified</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 5 — Beneficial owners identified</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 6 — PEP and sanctions screening complete</div>
-      <div class="gate-progress-row gate-done-row">✓ Gate 7 — KYC identity check complete</div>
+    <div style="max-width:420px;margin:0 auto;padding:0 20px 24px;text-align:left">
+      <div class="gate-progress-row gate-done-row">✓ Gate 3 — Company Registry
+        <span *ngIf="kybPhase1Result?.company_registry_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.company_registry_risk_score }}/30</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 4 — Director Verification
+        <span *ngIf="kybPhase1Result?.director_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.director_risk_score }}/20</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 5 — UBO Identification
+        <span *ngIf="kybPhase1Result?.ubo_risk_score != null" style="float:right;font-size:10px;opacity:0.7">Risk {{ kybPhase1Result.ubo_risk_score }}/15</span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 6 — PEP &amp; Sanctions
+        <span style="float:right;font-size:10px;opacity:0.9" [style.color]="kybPhase2aResult?.sanctions_match ? '#ef4444' : kybPhase2aResult?.pep_identified ? '#f59e0b' : '#22c55e'">
+          {{ kybPhase2aResult?.sanctions_match ? 'SANCTIONED' : kybPhase2aResult?.pep_identified ? 'PEP HIT' : 'CLEAR' }}
+          <ng-container *ngIf="kybPhase2aResult?.pep_sanctions_risk_score != null"> · Risk {{ kybPhase2aResult.pep_sanctions_risk_score }}/25</ng-container>
+        </span>
+      </div>
+      <div class="gate-progress-row gate-done-row">✓ Gate 7 — KYC Identity
+        <span style="float:right;font-size:10px;opacity:0.9" [style.color]="kybPhase2bResult?.kyc_identity_decision === 'GREEN' ? '#22c55e' : kybPhase2bResult?.kyc_identity_decision === 'FAIL' ? '#ef4444' : '#f59e0b'">
+          {{ kybPhase2bResult?.kyc_identity_decision || (kybPhase2bResult?.kyc_identity_verified ? 'VERIFIED' : 'FAILED') }}
+          <ng-container *ngIf="kybPhase2bResult?.kyc_identity_confidence != null"> · {{ confPct(kybPhase2bResult.kyc_identity_confidence) }}% conf</ng-container>
+        </span>
+      </div>
       <div class="gate-progress-row">⏳ Gate 8 — AML adverse media check</div>
       <div class="gate-progress-row">⏳ Gate 9 — Risk scoring and onboarding decision</div>
     </div>
@@ -1590,12 +1623,14 @@ export class KycOnboardingComponent {
       /incorporated[:\s]+([0-9]{1,2}[^\n,]{3,18}[0-9]{4})/i
     ));
 
-    // Stop at period (next sentence) or document-structure keywords for address
-    const regAddr = stopTrail(extract(coi, 120,
-      /registered (?:office|address)[:\s]+([^.\n]{10,120})/i
-    ) || extract(paR, 120,
-      /address[:\s]+([^.\n]{10,120})/i
-    ));
+    // Address — do NOT apply stopTrail; it clips house numbers and postcodes.
+    // Extract up to 220 chars and trim trailing punctuation only.
+    const rawAddr = extract(coi, 220,
+      /registered (?:office|address)[:\s]+([^\n]{10,220})/i
+    ) || extract(paR, 220,
+      /(?:registered\s+)?address[:\s]+([^\n]{10,220})/i
+    );
+    const regAddr = rawAddr ? rawAddr.trim().replace(/[,.:;\s]+$/, '').substring(0, 220) : '';
 
     // Director name from Register of Directors
     const dirName = extract(dirR, 60,
@@ -1612,22 +1647,42 @@ export class KycOnboardingComponent {
       /country[:\s]+([^\n,]{3,25})/i
     ));
 
-    // UBO name, shareholding and nationality from UBO register
-    const uboName = extract(uboR, 60,
-      /beneficial owner[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
-      /name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
-      /full name[:\s]+([^\n]{3,60})/i
-    );
-    const uboShare = extract(uboR, 6,
-      /([0-9]+(?:\.[0-9]+)?)\s*%/,
-      /shareholding[:\s]+([0-9]+)/i,
-      /shares[:\s]+([0-9]+)/i
-    );
-    const uboNat = stopTrail(extract(uboR, 30,
-      /nationality[:\s]+([^\n,]{3,25})/i,
-      /citizenship[:\s]+([^\n,]{3,25})/i,
-      /country of residence[:\s]+([^\n,]{3,25})/i
-    ));
+    // Multi-UBO extraction — scan for all "name + shareholding %" pairs in the register
+    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company)\b/i;
+    const uboEntries: UboEntry[] = [];
+    if (uboR) {
+      // Find every percentage occurrence and look backwards for the nearest person name
+      const pctRe = /([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%/g;
+      let pm: RegExpExecArray | null;
+      while ((pm = pctRe.exec(uboR)) !== null && uboEntries.length < 6) {
+        const before = uboR.substring(Math.max(0, pm.index - 200), pm.index);
+        // Greedy search backwards for a capitalised full name (2–4 words)
+        const nm = before.match(/([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})\s*$/);
+        if (!nm || skipLabels.test(nm[1])) continue;
+        const name = nm[1].trim().replace(/\s+/g, ' ');
+        if (uboEntries.some(u => u.fullName === name)) continue;
+        const ctx = uboR.substring(Math.max(0, pm.index - 60), Math.min(uboR.length, pm.index + 200));
+        const natM = ctx.match(/nationality[:\s]+([A-Za-z]+)/i) ?? ctx.match(/citizenship[:\s]+([A-Za-z]+)/i);
+        uboEntries.push({ fullName: name, shareholding: pm[1], nationality: natM?.[1] ?? '' });
+      }
+    }
+    if (!uboEntries.length) {
+      // Fallback: single-entry extraction
+      const uboName = extract(uboR, 60,
+        /beneficial owner[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
+        /name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
+        /full name[:\s]+([^\n]{3,60})/i
+      );
+      const uboShare = extract(uboR, 6,
+        /([0-9]+(?:\.[0-9]+)?)\s*%/,
+        /shareholding[:\s]+([0-9]+)/i
+      );
+      const uboNat = stopTrail(extract(uboR, 30,
+        /nationality[:\s]+([^\n,]{3,25})/i,
+        /citizenship[:\s]+([^\n,]{3,25})/i
+      ));
+      uboEntries.push({ fullName: uboName, shareholding: uboShare, nationality: uboNat });
+    }
 
     // Director document number from the Director ID Document slot (passport/licence scan)
     const dirIdText = this.slots.find(s => s.id === 'dir_id')?.extractedText ?? null;
@@ -1655,7 +1710,7 @@ export class KycOnboardingComponent {
       : coiLower.includes('private limited') || coiLower.includes(' ltd') || coiLower.includes('limited') ? 'Private Limited Company'
       : '');
 
-    console.log('[buildReviewData] extracted:', { companyName, regNum, incDate, regAddr, companyType, dirName, dirDob, dirNat, idNumber, uboName, uboShare, uboNat, sof });
+    console.log('[buildReviewData] extracted:', { companyName, regNum, incDate, regAddr, companyType, dirName, dirDob, dirNat, idNumber, uboEntries, sof });
 
     return {
       companyName,
@@ -1665,7 +1720,7 @@ export class KycOnboardingComponent {
       jurisdiction:       this.jurisdiction,
       companyType,
       directors: [{ fullName: dirName, dob: dirDob, nationality: dirNat, idType: 'Passport', idNumber: idNumber }],
-      ubos:      [{ fullName: uboName, shareholding: uboShare, nationality: uboNat }],
+      ubos:      uboEntries,
       sourceOfFunds: sof
     };
   }
@@ -1901,16 +1956,33 @@ export class KycOnboardingComponent {
       `"url": "URL if known or empty string", "category": "criminal|regulatory|fraud|reputational|other" }. ` +
       `Limit to 5 most significant findings.\n` +
       `Gate 9: Sum all gate scores — subtotal from Gates 3-7: ${subtotal}. ` +
-      `Add Gate 8 score for overall_risk_score (integer 0-100). ` +
+      `Add Gate 8 score for overall_risk_score (integer 0-100, MUST be ≤100). ` +
       `Decision: APPROVED (≤30), MANUAL_REVIEW (31-60), REJECTED (>60). ` +
-      `Return executive_summary (≤150 chars) and key_findings array.\n\n` +
-      `Return complete KYB_Case_Summary JSON for all gates.`;
+      `Return executive_summary (2-4 sentences, ≤400 chars — explain the decision, key risks found, and recommended next steps) ` +
+      `and key_findings array (3-6 bullet strings).\n\n` +
+      `Return complete KYB_Case_Summary JSON. IMPORTANT: include ALL gate risk scores: ` +
+      `company_registry_risk_score, director_risk_score, ubo_risk_score, pep_sanctions_risk_score, ` +
+      `kyc_identity_risk_score, aml_risk_score, overall_risk_score.`;
 
     this.lyzr.callAgentKyb(environment.agents['kybOrchestrator'], message, `kyb-p2c-${Date.now()}`).subscribe({
       next: (res) => {
         this.kybLoading = false;
         const p2c = this.lyzr.parseJSON<any>(res) ?? { raw: res.response };
-        this.kybResult = { ...p1, ...p2a, ...p2b, ...p2c };
+        const merged: any = { ...p1, ...p2a, ...p2b, ...p2c };
+        // Fill in default risk scores when the LLM omits them — prevents blank score bars
+        if (merged.company_registry_risk_score == null)
+          merged.company_registry_risk_score = merged.company_registry_verified ? 5 : 20;
+        if (merged.director_risk_score == null)
+          merged.director_risk_score = merged.director_verification_matched ? 3 : 15;
+        if (merged.ubo_risk_score == null)
+          merged.ubo_risk_score = merged.ubo_identification_declared ? 3 : 10;
+        if (merged.pep_sanctions_risk_score == null)
+          merged.pep_sanctions_risk_score = merged.sanctions_match ? 25 : merged.pep_identified ? 15 : 0;
+        if (merged.aml_risk_score == null && merged.aml_adverse_media_risk_score == null)
+          merged.aml_risk_score = merged.adverse_media_found ? 15 : 2;
+        if (merged.overall_risk_score)
+          merged.overall_risk_score = Math.min(100, merged.overall_risk_score);
+        this.kybResult = merged;
       },
       error: (err: any) => {
         this.kybLoading = false;
