@@ -1623,14 +1623,19 @@ export class KycOnboardingComponent {
       /incorporated[:\s]+([0-9]{1,2}[^\n,]{3,18}[0-9]{4})/i
     ));
 
-    // Address — do NOT apply stopTrail; it clips house numbers and postcodes.
-    // Extract up to 220 chars and trim trailing punctuation only.
+    // Address — stop at Companies House boilerplate that follows the postcode
+    // e.g. "is in England and Wales. Detail Information Company Name…"
+    const addrStop = (val: string): string => {
+      if (!val) return val;
+      const i = val.search(/\s+(?:is\s+in\s+england|detail\s+information|company\s+name|company\s+number|registration\s+number|incorporated|director|shareholder|annual\s+return|\d{8,})/i);
+      return i > 5 ? val.substring(0, i).trim() : val.trim();
+    };
     const rawAddr = extract(coi, 220,
       /registered (?:office|address)[:\s]+([^\n]{10,220})/i
     ) || extract(paR, 220,
       /(?:registered\s+)?address[:\s]+([^\n]{10,220})/i
     );
-    const regAddr = rawAddr ? rawAddr.trim().replace(/[,.:;\s]+$/, '').substring(0, 220) : '';
+    const regAddr = rawAddr ? addrStop(rawAddr).replace(/[,.:;\s]+$/, '').substring(0, 220) : '';
 
     // Director name from Register of Directors
     const dirName = extract(dirR, 60,
@@ -1648,7 +1653,7 @@ export class KycOnboardingComponent {
     ));
 
     // Multi-UBO extraction — scan for all "name + shareholding %" pairs in the register
-    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company)\b/i;
+    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company|shareholding|percentage|ownership|interest|holding|full\s+name)\b/i;
     const uboEntries: UboEntry[] = [];
     if (uboR) {
       // Find every percentage occurrence and look backwards for the nearest person name
@@ -1656,10 +1661,11 @@ export class KycOnboardingComponent {
       let pm: RegExpExecArray | null;
       while ((pm = pctRe.exec(uboR)) !== null && uboEntries.length < 6) {
         const before = uboR.substring(Math.max(0, pm.index - 200), pm.index);
-        // Greedy search backwards for a capitalised full name (2–4 words)
-        const nm = before.match(/([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})\s*$/);
-        if (!nm || skipLabels.test(nm[1])) continue;
-        const name = nm[1].trim().replace(/\s+/g, ' ');
+        // Scan ALL capitalised sequences in lookback window; pick last non-label one
+        const allNm = [...before.matchAll(/([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})/g)];
+        const validNm = allNm.filter(m => !skipLabels.test(m[1])).pop();
+        if (!validNm) continue;
+        const name = validNm[1].trim().replace(/\s+/g, ' ');
         if (uboEntries.some(u => u.fullName === name)) continue;
         const ctx = uboR.substring(Math.max(0, pm.index - 60), Math.min(uboR.length, pm.index + 200));
         const natM = ctx.match(/nationality[:\s]+([A-Za-z]+)/i) ?? ctx.match(/citizenship[:\s]+([A-Za-z]+)/i);
@@ -2146,9 +2152,8 @@ export class KycOnboardingComponent {
               : r.kyc_identity_decision === 'FAIL'          ? '✗ FAILED'
               : r.kyc_identity_verified                     ? '✓ VERIFIED' : '✗ FAILED',
         detail: r.kyc_identity_summary || '',
-        score: r.kyc_identity_confidence != null
-          ? this.confPct(r.kyc_identity_confidence)
-          : r.kyc_identity_risk_score ?? null,
+        score: r.kyc_identity_risk_score
+          ?? (r.kyc_identity_confidence != null ? Math.round((1 - this.normConf(r.kyc_identity_confidence)) * 20) : null),
         conf: r.kyc_identity_confidence != null
           ? this.confPct(r.kyc_identity_confidence)
           : dc(r.kyc_identity_risk_score ?? null, 20),
