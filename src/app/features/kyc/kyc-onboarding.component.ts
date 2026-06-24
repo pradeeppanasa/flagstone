@@ -1657,13 +1657,13 @@ export class KycOnboardingComponent {
 
     // Multi-UBO extraction
     // skipLabels: words that appear in register labels but never in person names
-    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company|shareholding|percentage|ownership|interest|holding|full\s+name|country|residence|nature|voting|control|registration|field|details|person|significant)\b/i;
+    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company|shareholding|percentage|ownership|interest|holding|full\s+name|country|residence|nature|voting|control|registration|field|details|person|significant|nationality|citizenship|birth|rights|legal|january|february|march|april|may|june|july|august|september|october|november|december)\b/i;
     const uboEntries: UboEntry[] = [];
 
     if (uboR) {
       // Strategy 1 — label-first (Companies House PSC format: "Full Legal Name … Shareholding Percentage X%")
       // Find every "Full [Legal] Name: X" occurrence then associate with nearest labeled %
-      const fullNameRe    = /full\s+(?:legal\s+)?name[:\s]+([A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){1,4})/gi;
+      const fullNameRe    = /full\s+(?:legal\s+)?name[:\s]+([A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){1,2})/gi;
       const sharePctLblRe = /shareholding\s+(?:percentage|percent)[:\s]*([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%/gi;
 
       const labeledNames:  Array<{name: string; pos: number}> = [];
