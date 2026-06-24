@@ -1655,43 +1655,74 @@ export class KycOnboardingComponent {
       /country[:\s]+([^\n,]{3,25})/i
     ));
 
-    // Multi-UBO extraction — scan for all "name + shareholding %" pairs in the register
-    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company|shareholding|percentage|ownership|interest|holding|full\s+name)\b/i;
+    // Multi-UBO extraction
+    // skipLabels: words that appear in register labels but never in person names
+    const skipLabels = /\b(?:date|form|schedule|register|company|director|officer|class|ordinary|share capital|beneficial owner|register of|the company|shareholding|percentage|ownership|interest|holding|full\s+name|country|residence|nature|voting|control|registration|field|details|person|significant)\b/i;
     const uboEntries: UboEntry[] = [];
+
     if (uboR) {
-      // Find every percentage occurrence and look backwards for the nearest person name
-      const pctRe = /([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%/g;
-      let pm: RegExpExecArray | null;
-      while ((pm = pctRe.exec(uboR)) !== null && uboEntries.length < 6) {
-        const lookBack  = uboR.substring(Math.max(0, pm.index - 300), pm.index);
-        const lookAhead = uboR.substring(pm.index + pm[0].length, Math.min(uboR.length, pm.index + 300));
-        const nmRe = /([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})/g;
-        // Look backward first (name before %); fall back to forward (name after %)
-        const validBack    = [...lookBack.matchAll(nmRe)].filter(m => !skipLabels.test(m[1])).pop();
-        const validForward = [...lookAhead.matchAll(nmRe)].filter(m => !skipLabels.test(m[1])).shift();
-        const validNm = validBack ?? validForward;
-        if (!validNm) continue;
-        const name = validNm[1].trim().replace(/\s+/g, ' ');
-        if (uboEntries.some(u => u.fullName === name)) continue;
-        const ctx = uboR.substring(Math.max(0, pm.index - 60), Math.min(uboR.length, pm.index + 300));
-        const natM = ctx.match(/nationality[:\s]+([A-Za-z]+)/i) ?? ctx.match(/citizenship[:\s]+([A-Za-z]+)/i);
-        uboEntries.push({ fullName: name, shareholding: pm[1], nationality: natM?.[1] ?? '' });
+      // Strategy 1 — label-first (Companies House PSC format: "Full Legal Name … Shareholding Percentage X%")
+      // Find every "Full [Legal] Name: X" occurrence then associate with nearest labeled %
+      const fullNameRe    = /full\s+(?:legal\s+)?name[:\s]+([A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){1,4})/gi;
+      const sharePctLblRe = /shareholding\s+(?:percentage|percent)[:\s]*([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%/gi;
+
+      const labeledNames:  Array<{name: string; pos: number}> = [];
+      const labeledShares: Array<{pct: string;  pos: number}> = [];
+      let lfm: RegExpExecArray | null;
+      let sfm: RegExpExecArray | null;
+      while ((lfm = fullNameRe.exec(uboR)) !== null) {
+        const n = lfm[1].trim().replace(/\s+/g, ' ');
+        if (n && !skipLabels.test(n)) labeledNames.push({ name: n, pos: lfm.index });
+      }
+      while ((sfm = sharePctLblRe.exec(uboR)) !== null) {
+        labeledShares.push({ pct: sfm[1], pos: sfm.index });
+      }
+
+      if (labeledNames.length) {
+        for (const ln of labeledNames) {
+          // Nearest labeled shareholding % within 600 chars after the name label
+          const nearShare = labeledShares
+            .filter(s => s.pos > ln.pos && s.pos < ln.pos + 600)
+            .sort((a, b) => a.pos - b.pos)[0];
+          const ctx = uboR.substring(ln.pos, Math.min(uboR.length, ln.pos + 500));
+          const natM = ctx.match(/nationality[:\s]+([A-Za-z]+)/i);
+          if (!uboEntries.some(u => u.fullName === ln.name)) {
+            uboEntries.push({ fullName: ln.name, shareholding: nearShare?.pct ?? '', nationality: natM?.[1] ?? '' });
+          }
+        }
+      }
+
+      // Strategy 2 — percentage-centric bidirectional scan (when no labeled names found)
+      if (!uboEntries.length) {
+        const pctRe = /([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%/g;
+        let pm: RegExpExecArray | null;
+        while ((pm = pctRe.exec(uboR)) !== null && uboEntries.length < 6) {
+          const lookBack  = uboR.substring(Math.max(0, pm.index - 300), pm.index);
+          const lookAhead = uboR.substring(pm.index + pm[0].length, Math.min(uboR.length, pm.index + 300));
+          const nmRe = /([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})/g;
+          const validBack    = [...lookBack.matchAll(nmRe)].filter(m => !skipLabels.test(m[1])).pop();
+          const validForward = [...lookAhead.matchAll(nmRe)].filter(m => !skipLabels.test(m[1])).shift();
+          const validNm = validBack ?? validForward;
+          if (!validNm) continue;
+          const name = validNm[1].trim().replace(/\s+/g, ' ');
+          if (uboEntries.some(u => u.fullName === name)) continue;
+          const ctx = uboR.substring(Math.max(0, pm.index - 60), Math.min(uboR.length, pm.index + 300));
+          const natM = ctx.match(/nationality[:\s]+([A-Za-z]+)/i) ?? ctx.match(/citizenship[:\s]+([A-Za-z]+)/i);
+          uboEntries.push({ fullName: name, shareholding: pm[1], nationality: natM?.[1] ?? '' });
+        }
       }
     }
+
+    // Strategy 3 — single-entry fallback (no UBO register uploaded or no structure detected)
     if (!uboEntries.length) {
-      // Fallback: single-entry extraction
       const rawUboName = extract(uboR, 60,
         /beneficial owner[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
         /name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
         /full name[:\s]+([^\n]{3,60})/i
       );
-      // Discard if the extracted "name" is itself a label (e.g. "Shareholding Percentage")
-      const uboName = rawUboName && !skipLabels.test(rawUboName) ? rawUboName : '';
-      const uboShare = extract(uboR, 6,
-        /([0-9]+(?:\.[0-9]+)?)\s*%/,
-        /shareholding[:\s]+([0-9]+)/i
-      );
-      const uboNat = stopTrail(extract(uboR, 30,
+      const uboName  = rawUboName && !skipLabels.test(rawUboName) ? rawUboName : '';
+      const uboShare = extract(uboR, 6, /([0-9]+(?:\.[0-9]+)?)\s*%/, /shareholding[:\s]+([0-9]+)/i);
+      const uboNat   = stopTrail(extract(uboR, 30,
         /nationality[:\s]+([^\n,]{3,25})/i,
         /citizenship[:\s]+([^\n,]{3,25})/i
       ));
