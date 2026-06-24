@@ -1627,8 +1627,11 @@ export class KycOnboardingComponent {
     // e.g. "is in England and Wales. Detail Information Company Name…"
     const addrStop = (val: string): string => {
       if (!val) return val;
-      const i = val.search(/\s+(?:is\s+in\s+england|detail\s+information|company\s+name|company\s+number|registration\s+number|incorporated|director|shareholder|annual\s+return|\d{8,})/i);
-      return i > 5 ? val.substring(0, i).trim() : val.trim();
+      const v = val.trim();
+      // Regex captured boilerplate instead of an address — the whole string is non-address
+      if (/^(?:is\s+in\b|the\s+(?:registered|company)\b|detail\b|information\b|company\s+(?:name|number)\b)/i.test(v)) return '';
+      const i = v.search(/\s+(?:is\s+in\s+england|detail\s+information|company\s+name|company\s+number|registration\s+number|incorporated|director|shareholder|annual\s+return|\d{8,})/i);
+      return i > 5 ? v.substring(0, i) : v;
     };
     const rawAddr = extract(coi, 220,
       /registered (?:office|address)[:\s]+([^\n]{10,220})/i
@@ -1660,25 +1663,30 @@ export class KycOnboardingComponent {
       const pctRe = /([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%/g;
       let pm: RegExpExecArray | null;
       while ((pm = pctRe.exec(uboR)) !== null && uboEntries.length < 6) {
-        const before = uboR.substring(Math.max(0, pm.index - 200), pm.index);
-        // Scan ALL capitalised sequences in lookback window; pick last non-label one
-        const allNm = [...before.matchAll(/([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})/g)];
-        const validNm = allNm.filter(m => !skipLabels.test(m[1])).pop();
+        const lookBack  = uboR.substring(Math.max(0, pm.index - 300), pm.index);
+        const lookAhead = uboR.substring(pm.index + pm[0].length, Math.min(uboR.length, pm.index + 300));
+        const nmRe = /([A-Z][a-zA-Z-]+(?:\s+[A-Z][a-zA-Z-]+){1,3})/g;
+        // Look backward first (name before %); fall back to forward (name after %)
+        const validBack    = [...lookBack.matchAll(nmRe)].filter(m => !skipLabels.test(m[1])).pop();
+        const validForward = [...lookAhead.matchAll(nmRe)].filter(m => !skipLabels.test(m[1])).shift();
+        const validNm = validBack ?? validForward;
         if (!validNm) continue;
         const name = validNm[1].trim().replace(/\s+/g, ' ');
         if (uboEntries.some(u => u.fullName === name)) continue;
-        const ctx = uboR.substring(Math.max(0, pm.index - 60), Math.min(uboR.length, pm.index + 200));
+        const ctx = uboR.substring(Math.max(0, pm.index - 60), Math.min(uboR.length, pm.index + 300));
         const natM = ctx.match(/nationality[:\s]+([A-Za-z]+)/i) ?? ctx.match(/citizenship[:\s]+([A-Za-z]+)/i);
         uboEntries.push({ fullName: name, shareholding: pm[1], nationality: natM?.[1] ?? '' });
       }
     }
     if (!uboEntries.length) {
       // Fallback: single-entry extraction
-      const uboName = extract(uboR, 60,
+      const rawUboName = extract(uboR, 60,
         /beneficial owner[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
         /name[:\s]+([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i,
         /full name[:\s]+([^\n]{3,60})/i
       );
+      // Discard if the extracted "name" is itself a label (e.g. "Shareholding Percentage")
+      const uboName = rawUboName && !skipLabels.test(rawUboName) ? rawUboName : '';
       const uboShare = extract(uboR, 6,
         /([0-9]+(?:\.[0-9]+)?)\s*%/,
         /shareholding[:\s]+([0-9]+)/i
@@ -1932,9 +1940,7 @@ export class KycOnboardingComponent {
         `UBO ${i + 1}: ${u.fullName}, Shareholding: ${u.shareholding || 'Unknown'}%`
       ).join('\n');
 
-    // Persona returns confidence (0-1 or 0-100); normalise before converting to risk score.
-    const kyc7Risk = p2b.kyc_identity_risk_score
-      ?? Math.round((1 - this.normConf(p2b.kyc_identity_confidence)) * 20);
+    const kyc7Risk = this.kycRiskScore(p2b);
 
     const subtotal = (p1.company_registry_risk_score ?? 0) + (p1.director_risk_score ?? 0) +
                      (p1.ubo_risk_score ?? 0) + (p2a.pep_sanctions_risk_score ?? 0) + kyc7Risk;
@@ -2080,10 +2086,7 @@ export class KycOnboardingComponent {
   get processorLiabilityScore(): number | null {
     if (!this.kybResult) return null;
     const r = this.kybResult;
-    // Persona returns kyc_identity_confidence (0-1 or 0-100) not a risk score.
-    // Convert normalised confidence: 0.95 → risk ~1; 0.50 → risk ~10.
-    const kycRisk = r.kyc_identity_risk_score
-      ?? Math.round((1 - this.normConf(r.kyc_identity_confidence)) * 20);
+    const kycRisk = this.kycRiskScore(r);
     const score = Math.min(100, Math.round(
       (r.pep_sanctions_risk_score                         ?? 0) * 1.6 +
       (r.aml_risk_score ?? r.aml_adverse_media_risk_score ?? 0) * 1.4 +
@@ -2152,8 +2155,7 @@ export class KycOnboardingComponent {
               : r.kyc_identity_decision === 'FAIL'          ? '✗ FAILED'
               : r.kyc_identity_verified                     ? '✓ VERIFIED' : '✗ FAILED',
         detail: r.kyc_identity_summary || '',
-        score: r.kyc_identity_risk_score
-          ?? (r.kyc_identity_confidence != null ? Math.round((1 - this.normConf(r.kyc_identity_confidence)) * 20) : null),
+        score: this.kycRiskScore(r),
         conf: r.kyc_identity_confidence != null
           ? this.confPct(r.kyc_identity_confidence)
           : dc(r.kyc_identity_risk_score ?? null, 20),
@@ -2223,6 +2225,17 @@ export class KycOnboardingComponent {
       parts.push('no adverse media');
     }
     return `${level} — ${parts.join(' · ')}`;
+  }
+
+  // KYC risk score (0–20): derived from confidence when available (authoritative),
+  // otherwise from kyc_identity_risk_score — guarding against AI returning 0-100 confidence
+  // as a risk score (e.g. 95 instead of 1).
+  private kycRiskScore(r: any): number {
+    if (r?.kyc_identity_confidence != null) {
+      return Math.round((1 - this.normConf(r.kyc_identity_confidence)) * 20);
+    }
+    const rs: number = r?.kyc_identity_risk_score ?? 20;
+    return rs > 20 ? Math.round((1 - rs / 100) * 20) : rs;
   }
 
   // Normalise Persona confidence to 0–1 regardless of whether it was sent as 0.95 or 95.
