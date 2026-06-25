@@ -7,8 +7,11 @@ dist/
 # Angular cache
 .angular/
 
-# Environment (keep only the template)
-# src/environments/environment.prod.ts
+# Secrets — never commit real keys
+.env
+.env.*
+!.env.example
+src/environments/environment.local.ts
 
 # OS
 .DS_Store

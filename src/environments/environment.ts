@@ -1,6 +1,8 @@
+import { localApiKey } from './environment.local';
+
 export const environment = {
   production: false,
-  lyzrApiKey: 'sk-default-KshvKfZv5VreGXMjOe8DQvFJfsosuOcR',
+  lyzrApiKey: localApiKey,
   lyzrBaseUrl: 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/',
   userId: 'pradeep.p@panasatech.com',
   agents: {
